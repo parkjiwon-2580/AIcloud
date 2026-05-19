@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../../base/questionnaire-service
+
+# 운영 환경만의 특별한 설정
+namePrefix: prod- 
+replicas:
+  - name: questionnaire-service
+    count: 3 # 파드 3개 실행 (트래픽 분산 및 고가용성 확보)

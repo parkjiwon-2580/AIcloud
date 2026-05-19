@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-triage-service
+  labels:
+    app: ai-triage-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ai-triage-service
+  template:
+    metadata:
+      labels:
+        app: ai-triage-service
+    spec:
+      containers:
+      - name: ai-triage-service
+        image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service:latest # 나중에 치환될 부분
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: ai-triage-service-config
+        # - secretRef:
+        #     name: ai-triage-service-secret

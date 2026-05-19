@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hospital-recommendation-service
+  labels:
+    app: hospital-recommendation-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hospital-recommendation-service
+  template:
+    metadata:
+      labels:
+        app: hospital-recommendation-service
+    spec:
+      containers:
+      - name: hospital-recommendation-service
+        image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/hospital-recommendation-service:latest # 나중에 치환될 부분
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: hospital-recommendation-service-config
+        # - secretRef:
+        #     name: hospital-recommendation-service-secret

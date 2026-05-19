@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ai-triage-dev      # ArgoCD 화면에 보일 이름
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git' # 🚨 본인 계정으로 변경!
+    targetRevision: main
+    path: manifests/overlays/dev/ai-triage-service # 👈 이 서비스의 Kustomize 경로
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

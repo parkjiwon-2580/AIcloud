@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+data:
+  APP_ENV: "dev"
+  SERVICE_NAME: "frontend"
+  LOG_LEVEL: "INFO"
+  TZ: "Asia/Seoul"
+  # 프론트엔드 빌드나 런타임에 필요한 환경변수가 있다면 여기에 추가
+  # 예: VITE_API_BASE_URL: "http://api.howmuch.com"
