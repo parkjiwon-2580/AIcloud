@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/zipgaskkukdp/hospital-service-app.git'
+    repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git'
     targetRevision: main
     path: manifests/overlays/dev # 우선 개발 환경 폴더만 타겟팅
   destination:
