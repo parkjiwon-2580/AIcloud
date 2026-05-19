@@ -1,0 +1,13 @@
+# Optional remote backend example.
+# Copy this file to backend.tf only after the S3 bucket and DynamoDB lock table
+# have been prepared. Do not commit real backend values if they are sensitive.
+
+terraform {
+  backend "s3" {
+    bucket         = "ai-care-dev-terraform-state-105959916837"
+    key            = "infra/dev/terraform.tfstate"
+    region         = "ap-northeast-2"
+    dynamodb_table = "ai-care-dev-terraform-locks"
+    encrypt        = true
+  }
+}
