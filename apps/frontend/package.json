@@ -1,4 +1,7 @@
 {
-  "name": "frontend-dummy",
-  "version": "1.0.0"
+  "name": "frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "echo '더미 빌드 성공! 나중에 앱 담당자가 진짜 코드로 바꿀 예정'"
+  }
 }
