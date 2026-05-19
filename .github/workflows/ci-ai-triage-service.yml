@@ -72,3 +72,4 @@ jobs:
         git add manifests/overlays/dev/ai-triage-service/kustomization.yaml
         git commit -m "chore: update ai-triage-service image tag to ${{ github.sha }}"
         git push
+        
