@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-user-service
+  labels:
+    app: auth-user-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-user-service
+  template:
+    metadata:
+      labels:
+        app: auth-user-service
+    spec:
+      containers:
+      - name: auth-user-service
+        image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/auth-user-service:latest # 나중에 치환될 부분
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: auth-user-service-config
+        # - secretRef:
+        #     name: auth-user-service-secret

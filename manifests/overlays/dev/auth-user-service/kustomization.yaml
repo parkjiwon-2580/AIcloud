@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Base에 있는 기본 뼈대를 그대로 가져옵니다.
+resources:
+  - ../../../base/auth-user-service
+
+# 개발 환경만의 특별한 설정
+namePrefix: dev- # 모든 리소스 이름 앞에 dev- 를 붙임 (예: dev-auth-user-service)
+replicas:
+  - name: auth-user-service
+    count: 1 # 파드 1개만 실행

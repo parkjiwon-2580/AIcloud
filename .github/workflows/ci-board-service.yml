@@ -1,0 +1,75 @@
+name: CI - Board Service
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - 'apps/board-service/**' # ⭐ Board Service 코드가 바뀔 때만 실행!
+  workflow_dispatch: # 👈 이거 한 줄 추가! (수동 실행 버튼 생성)
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: board-service
+
+# OIDC 토큰 발급을 위한 권한 설정 (필수)
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+# Node.js / TypeScript / React Native Lint 검사 (Placeholder)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '24'
+    - name: Run Lint (TS/RN) Placeholder
+      run: echo "Run Lint here - 프론트/백엔드 팀이 TypeScript(ESLint) 세팅 후 명령어 수정 예정"
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::105959916837:role/github-actions-workflow-role # 🚨 나중에 인프라 담당자에게 받아서 채울 부분
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and Push Docker image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        cd apps/board-service
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        # ... (기존 docker push 단계) ...
+
+    # 1. Kustomize 설치
+    - name: Setup Kustomize
+      uses: imranismail/setup-kustomize@v2
+
+    # 2. 새 이미지 태그로 매니페스트 업데이트
+    - name: Update Kubernetes resources
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        cd manifests/overlays/dev/board-service
+        # Kustomize를 이용해 deployment.yaml의 이미지 주소를 새 버전으로 덮어씁니다.
+        kustomize edit set image 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service:latest=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+    # 3. 변경된 K8s 설정 파일을 Git에 자동 커밋 & 푸시
+    - name: Commit and push changes
+      run: |
+        git config --global user.name "github-actions[bot]"
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git add manifests/overlays/dev/board-service/kustomization.yaml
+        git commit -m "chore: update board-service image tag to ${{ github.sha }}"
+        git push

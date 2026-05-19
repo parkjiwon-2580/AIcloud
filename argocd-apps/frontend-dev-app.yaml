@@ -1,0 +1,21 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: frontend-dev       # ArgoCD 웹 화면에 표시될 앱 이름
+  namespace: argocd        # ArgoCD 시스템이 설치된 네임스페이스 (일반적으로 argocd)
+spec:
+  project: default
+  source:
+    # 🚨 주의: 본인의 실제 GitHub 레포지토리 주소로 꼭 변경해주세요!
+    repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git' 
+    targetRevision: main   # 감시할 기준 브랜치 (지금은 CI 브랜치지만, 보통 main을 봅니다)
+    path: manifests/overlays/dev/frontend # ArgoCD가 읽어들일 Kustomize 경로
+  destination:
+    server: 'https://kubernetes.default.svc' # 현재 클러스터 내부에 배포
+    namespace: default     # 실제 파드(Pod)가 배포될 네임스페이스
+  syncPolicy:
+    automated:
+      prune: true          # Git에서 리소스가 지워지면 클러스터에서도 자동 삭제
+      selfHeal: true       # 누군가 kubectl로 강제 수정해도 Git 상태로 자동 복구
+    syncOptions:
+      - CreateNamespace=true # 네임스페이스가 없다면 자동 생성

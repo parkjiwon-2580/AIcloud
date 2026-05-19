@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      containers:
+      - name: frontend
+        image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:latest # 나중에 CI가 치환할 부분
+        ports:
+        - containerPort: 8080 # 프론트엔드 컨테이너 포트
+        envFrom:
+        - configMapRef:
+            name: frontend-config
+        - secretRef:
+            name: frontend-secret
