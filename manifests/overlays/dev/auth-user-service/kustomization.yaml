@@ -3,10 +3,14 @@ kind: Kustomization
 
 # Base에 있는 기본 뼈대를 그대로 가져옵니다.
 resources:
-  - ../../../base/auth-user-service
+- ../../../base/auth-user-service
 
 # 개발 환경만의 특별한 설정
-namePrefix: dev- # 모든 리소스 이름 앞에 dev- 를 붙임 (예: dev-auth-user-service)
+namePrefix: dev-
 replicas:
-  - name: auth-user-service
-    count: 1 # 파드 1개만 실행
+- count: 1
+  name: auth-user-service
+images:
+- name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/auth-user-service:latest
+  newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/auth-user-service
+  newTag: 90009e36c4f01ff426814eebb06b48dfd135a852
