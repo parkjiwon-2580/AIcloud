@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # 🗄️ 로컬 테스트용 통합 DB (실제 운영의 AWS RDS + On-Prem DB 역할 대체)
+  local-db:
+    image: postgres:17.9-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: hospital
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+    volumes:
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - local_pg_data:/var/lib/postgresql/data
+
+  # 🛡️ 1. Auth & User Service
+  auth-user-service:
+    build:
+      context: ./apps/auth-user-service
+    ports:
+      - "8081:8080" # 로컬 호스트의 8081 포트를 컨테이너의 8080으로 연결
+    env_file:
+      - .env
+    depends_on:
+      - local-db
+
+  # 📝 2. Questionnaire Service
+  questionnaire-service:
+    build:
+      context: ./apps/questionnaire-service
+    ports:
+      - "8082:8080"
+    env_file:
+      - .env
+
+  # 📋 3. Board Service
+  board-service:
+    build:
+      context: ./apps/board-service
+    ports:
+      - "8083:8080"
+    env_file:
+      - .env
+    depends_on:
+      - local-db
+
+  # 🤖 4. AI Triage Service
+  ai-triage-service:
+    build:
+      context: ./apps/ai-triage-service
+    ports:
+      - "8084:8080"
+    env_file:
+      - .env
+
+  # 🏥 5. Hospital Recommendation Service
+  hospital-recommendation-service:
+    build:
+      context: ./apps/hospital-recommendation-service
+    ports:
+      - "8085:8080"
+    env_file:
+      - .env
+
+  # 🔒 6. On-Prem Sensitive API (실제론 VPN 너머에 있지만 로컬에선 같이 띄움)
+  onprem-sensitive-api:
+    build:
+      context: ./apps/onprem-sensitive-api
+    ports:
+      - "8086:8080"
+    env_file:
+      - .env
+    depends_on:
+      - local-db
+
+# DB 데이터가 컨테이너 재시작 시 날아가지 않도록 볼륨 지정
+volumes:
+  local_pg_data:

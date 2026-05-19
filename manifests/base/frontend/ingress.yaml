@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend-ingress
+  annotations:
+    # AWS ALB Ingress Controller를 위한 설정
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing # 인터넷에서 접속 가능하도록 설정
+    alb.ingress.kubernetes.io/target-type: ip
+    # 만약 SSL(HTTPS)을 적용한다면 아래 주석을 해제하고 인증서 ARN을 넣습니다.
+    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:xxxxx:certificate/xxxx
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend # 위에서 만든 서비스 이름과 일치해야 함
+                port:
+                  number: 80

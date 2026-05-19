@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hospital-recommendation-service-config
+data:
+  APP_ENV: "dev"
+  SERVICE_NAME: "hospital-recommendation-service"
+  LOG_LEVEL: "INFO"
+  TZ: "Asia/Seoul"
+  AWS_REGION: "ap-northeast-2"
+  # S3 및 DB 설정 (값은 추후 인프라/데이터 담당자가 확정 시 변경)
+  S3_BUCKET_NAME: "placeholder-bucket-name"
+  S3_BOARD_IMAGE_PREFIX: "board/"
+  S3_PRESIGNED_URL_EXPIRE_SECONDS: "300"
+  RDS_PORT: "5432"
+  RDS_DB_NAME: "hospital"
+  CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"

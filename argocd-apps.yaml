@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: dev-hospital-services
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/zipgaskkukdp/hospital-service-app.git'
+    targetRevision: main
+    path: manifests/overlays/dev # 우선 개발 환경 폴더만 타겟팅
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: dev-hospital # 배포될 EKS 네임스페이스
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true # Git 내용과 다르면 자동으로 고침
