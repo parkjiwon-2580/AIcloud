@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     # 🚨 주의: 본인의 실제 GitHub 레포지토리 주소로 꼭 변경해주세요!
-    repoURL: 'https://github.com/zipgaskkukdp/hospital-service-app.git' 
+    repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git' 
     targetRevision: main   # 감시할 기준 브랜치 (지금은 CI 브랜치지만, 보통 main을 봅니다)
     path: manifests/overlays/dev/frontend # ArgoCD가 읽어들일 Kustomize 경로
   destination:

@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/zipgaskkukdp/hospital-service-app.git' # 🚨 본인 계정으로 변경!
+    repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git' # 🚨 본인 계정으로 변경!
     targetRevision: main
     path: manifests/overlays/dev/hospital-recommendation-service # 👈 이 서비스의 Kustomize 경로
   destination:
