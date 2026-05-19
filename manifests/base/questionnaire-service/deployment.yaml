@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: questionnaire-service
+  labels:
+    app: questionnaire-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: questionnaire-service
+  template:
+    metadata:
+      labels:
+        app: questionnaire-service
+    spec:
+      containers:
+      - name: questionnaire-service
+        image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/questionnaire-service:latest # 나중에 치환될 부분
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: questionnaire-service-config
+        # - secretRef:
+        #     name: questionnaire-service-secret

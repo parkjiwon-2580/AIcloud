@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: board-service
+  labels:
+    app: board-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: board-service
+  template:
+    metadata:
+      labels:
+        app: board-service
+    spec:
+      containers:
+      - name: board-service
+        image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service:latest # 나중에 치환될 부분
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: board-service-config
+        # - secretRef:
+        #     name: board-service-secret
