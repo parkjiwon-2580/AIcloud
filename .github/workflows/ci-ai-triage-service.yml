@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'apps/ai-triage-service/**' # ⭐ Ai Triage Service 코드가 바뀔 때만 실행!
+  workflow_dispatch: # 👈 이거 한 줄 추가! (수동 실행 버튼 생성)
 
 env:
   AWS_REGION: ap-northeast-2
@@ -72,4 +73,3 @@ jobs:
         git add manifests/overlays/dev/ai-triage-service/kustomization.yaml
         git commit -m "chore: update ai-triage-service image tag to ${{ github.sha }}"
         git push
-        

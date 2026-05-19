@@ -5,6 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'apps/auth-user-service/**' # ⭐ Auth User Service 코드가 바뀔 때만 실행!
+  workflow_dispatch: # 👈 이거 한 줄 추가! (수동 실행 버튼 생성)
 
 env:
   AWS_REGION: ap-northeast-2
