@@ -2,7 +2,7 @@ name: CI - Frontend Service
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "**" ]
     paths:
       - 'apps/frontend/**' # ⭐ Frontend 코드가 바뀔 때만 실행되도록 설정!
   workflow_dispatch: # 👈 이거 한 줄 추가! (수동 실행 버튼 생성)
