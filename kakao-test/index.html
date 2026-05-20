@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <title>카카오맵 테스트</title>
+
+  <style>
+    #map {
+      width: 100%;
+      height: 100vh;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="map"></div>
+
+<!-- 반드시 body 마지막 -->
+<script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=7ed4eb0a52edd0459d28de6073874a34"></script>
+
+<script>
+
+console.log(window.kakao);
+
+const container = document.getElementById('map');
+
+const options = {
+  center: new kakao.maps.LatLng(37.5665, 126.9780),
+  level: 3,
+};
+
+const map = new kakao.maps.Map(container, options);
+
+const marker = new kakao.maps.Marker({
+  position: new kakao.maps.LatLng(37.5665, 126.9780),
+});
+
+marker.setMap(map);
+
+</script>
+
+</body>
+</html>
