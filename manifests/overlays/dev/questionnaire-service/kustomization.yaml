@@ -3,10 +3,14 @@ kind: Kustomization
 
 # Base에 있는 기본 뼈대를 그대로 가져옵니다.
 resources:
-  - ../../../base/questionnaire-service
+- ../../../base/questionnaire-service
 
 # 개발 환경만의 특별한 설정
-namePrefix: dev- # 모든 리소스 이름 앞에 dev- 를 붙임 (예: dev-board-service)
+namePrefix: dev-
 replicas:
-  - name: questionnaire-service
-    count: 1 # 파드 1개만 실행
+- count: 1
+  name: questionnaire-service
+images:
+- name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/questionnaire-service:latest
+  newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/questionnaire-service
+  newTag: 4dcb536807f038eadb1f6ec029132798a61bad3f
