@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Child {
+
+  id Int @id @default(autoincrement())
+
+  name String
+
+  ageMonths Int
+
+  weight Float
+
+  questionnaires Questionnaire[]
+}
+
+model Questionnaire {
+
+  id Int @id @default(autoincrement())
+
+  childId Int
+
+  symptomText String
+
+  status String @default("PENDING")
+
+  createdAt DateTime @default(now())
+
+  child Child
+    @relation(fields: [childId], references: [id])
+}
+
+model QuestionnaireResult {
+
+  id Int @id @default(autoincrement())
+
+  questionnaireId Int
+
+  symptoms Json
+
+  dangerSigns Json
+
+  riskLevel String
+
+  summary String
+
+  pdfUrl String?
+
+  createdAt DateTime @default(now())
+}
