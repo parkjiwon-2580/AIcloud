@@ -1,4 +1,7 @@
 {
-  "name": "frontend-dummy",
-  "version": "1.0.0"
+  "name": "frontend",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "mkdir -p dist && echo '<h1>CI/CD Test Success</h1>' > dist/index.html"
+  }
 }
