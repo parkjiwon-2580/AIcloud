@@ -1,0 +1,65 @@
+name: CI - onprem-sensitive-api
+
+on:
+  push:
+    branches: [ "**" ]
+    paths:
+      - 'apps/onprem-sensitive-api/**' # ⭐ 코드가 바뀔 때만 실행!
+  workflow_dispatch: # 수동 실행 버튼 생성
+
+env:
+  AWS_REGION: ap-northeast-2
+  ECR_REPOSITORY: onprem-sensitive-api
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    # 🐍 1. Python 환경 세팅 (다시 추가!)
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13' 
+
+    # 🧪 2. 테스트 및 린트 플레이스홀더 (다시 추가!)
+    - name: Install dependencies & Run Lint/Test (Placeholder)
+      run: |
+        echo "Run Lint & Test here - 파이썬 린트(flake8, black)나 테스트(pytest) 세팅 후 수정 예정"
+        # 나중에 백엔드 팀이 세팅 완료하면 아래 주석을 풀고 사용하면 됩니다.
+        # cd apps/onprem-sensitive-api
+        # pip install -r requirements.txt
+        # pytest
+
+    # 🔐 3. AWS 인증 및 ECR 로그인
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        role-to-assume: arn:aws:iam::105959916837:role/github-actions-workflow-role
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    # 📦 4. 도커 이미지 빌드 및 AWS ECR 푸시 (쿠버네티스 단계는 없음!)
+    - name: Build and Push Docker image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        cd apps/onprem-sensitive-api
+        
+        # 고유 해시 태그(버전 관리용)와 latest 태그(배포 편의용)를 모두 빌드합니다.
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+        
+        # ECR 저장소로 두 태그를 모두 푸시합니다.
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
