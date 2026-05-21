@@ -3,10 +3,14 @@ kind: Kustomization
 
 # Base에 있는 기본 뼈대를 그대로 가져옵니다.
 resources:
-  - ../../../base/ai-triage-service
+- ../../../base/ai-triage-service
 
 # 개발 환경만의 특별한 설정
-namePrefix: dev- # 모든 리소스 이름 앞에 dev- 를 붙임 (예: dev-board-service)
+namePrefix: dev-
 replicas:
-  - name: ai-triage-service
-    count: 1 # 파드 1개만 실행
+- count: 1
+  name: ai-triage-service
+images:
+- name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service:latest
+  newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service
+  newTag: b29ffe5af24282fc287d86e26c22e4803c04aac5
