@@ -13,4 +13,4 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service
-  newTag: 3eb887c5e0a62ac3078068bdaba7bc11d23d3c72
+  newTag: 8bfe1ea6815d4ffc9533379e4be3e883a276e806
