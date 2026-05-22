@@ -3,10 +3,14 @@ kind: Kustomization
 
 # Base에 있는 기본 뼈대를 그대로 가져옵니다.
 resources:
-  - ../../../base/hospital-recommendation-service
+- ../../../base/hospital-recommendation-service
 
 # 개발 환경만의 특별한 설정
-namePrefix: dev- # 모든 리소스 이름 앞에 dev- 를 붙임 (예: dev-board-service)
+namePrefix: dev-
 replicas:
-  - name: hospital-recommendation-service
-    count: 1 # 파드 1개만 실행
+- count: 1
+  name: hospital-recommendation-service
+images:
+- name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/hospital-recommendation-service:latest
+  newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/hospital-recommendation-service
+  newTag: 72967144ed65d63123929dc8ac8e6b08f4c174d7
