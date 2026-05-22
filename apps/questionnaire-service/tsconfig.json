@@ -21,6 +21,8 @@
 
     "skipLibCheck": true,
 
+    "types": ["node"]
+
   },
 
   "include": [
