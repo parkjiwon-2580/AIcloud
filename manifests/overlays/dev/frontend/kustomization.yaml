@@ -2,14 +2,15 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - ../../../base/frontend
+- ../../../base/frontend
 
 # 개발 환경 설정 (보통은 Prefix를 안 붙이거나 dev- 를 붙임)
 # namePrefix: dev-  (필요하다면 주석 해제)
 
 replicas:
-  - name: frontend
-    count: 1 # 개발 환경은 1개면 충분
-
-# CI(GitHub Actions)가 'kustomize edit set image' 명령어로 
-# 아래에 images: 설정을 자동으로 추가할 것입니다.
+- count: 1
+  name: frontend
+images:
+- name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:latest
+  newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend-service
+  newTag: 6378fe594fe907c18d3a9bcb05b419d955a82d55
