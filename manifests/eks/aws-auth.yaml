@@ -19,11 +19,16 @@ data:
         - system:masters
 
     - userarn: arn:aws:iam::105959916837:user/honghee
-      username: honghee
+      username: donghee
       groups:
         - system:masters
 
     - userarn: arn:aws:iam::105959916837:user/jiwon
       username: jiwon
+      groups:
+        - system:masters
+
+    - userarn: arn:aws:iam::105959916837:user/jiyun
+      username: jiyun
       groups:
         - system:masters
