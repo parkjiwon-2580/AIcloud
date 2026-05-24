@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ai클라우드</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <header class="topbar" id="topbar">
+      <a class="brand" href="#/home" aria-label="Ai클라우드 홈">Ai클라우드</a>
+      <nav class="nav-links" aria-label="주요 메뉴">
+        <a href="#/consultation" data-nav="consultation">문진 입력</a>
+        <a href="#/history" data-nav="history">진료 내역</a>
+        <a href="#/hospitals" data-nav="hospitals">병원 추천</a>
+        <a href="#/info" data-nav="info">정보공유</a>
+        <a href="#/mypage" data-nav="mypage">마이페이지</a>
+      </nav>
+      <button class="ghost-button" id="logoutButton" type="button">로그아웃</button>
+    </header>
+
+    <main class="page-root">
+      <section class="page auth-page" id="loginPage">
+        <article class="auth-card">
+          <p class="brand-mark">Ai클라우드</p>
+          <h1>로그인</h1>
+          <p class="subtle center">안전하고 편리한 영유아 AI 문진을 시작하세요.</p>
+          <form id="loginForm">
+            <label>
+              이메일
+              <input name="email" type="email" placeholder="example@email.com" required />
+            </label>
+            <label>
+              비밀번호
+              <input name="password" type="password" placeholder="비밀번호를 입력해 주세요" required />
+            </label>
+            <div class="form-row between">
+              <label class="check-label">
+                <input type="checkbox" />
+                로그인 상태 유지
+              </label>
+              <span class="text-link muted">비밀번호 찾기</span>
+            </div>
+            <button class="primary-button" type="submit">로그인</button>
+          </form>
+          <p class="auth-switch">계정이 없으신가요? <a href="#/signup">회원가입</a></p>
+        </article>
+      </section>
+
+      <section class="page auth-page" id="signupPage">
+        <article class="auth-card wide">
+          <div class="icon-circle">+</div>
+          <h1>회원가입</h1>
+          <p class="subtle center">아이 정보까지 등록하면 바로 문진을 시작할 수 있어요.</p>
+          <form id="signupForm">
+            <label>
+              이메일
+              <input name="email" type="email" placeholder="example@email.com" required />
+            </label>
+            <div class="two-col">
+              <label>
+                비밀번호
+                <input name="password" type="password" placeholder="8자 이상 입력" required />
+              </label>
+              <label>
+                닉네임
+                <input name="nickname" placeholder="사용할 닉네임" required />
+              </label>
+            </div>
+            <div class="form-divider"></div>
+            <h2>아이 정보</h2>
+            <label>
+              아이 이름
+              <input name="childName" placeholder="아이 이름을 입력해 주세요" required />
+            </label>
+            <div class="two-col">
+              <label>
+                아이의 생년월일
+                <input name="childBirthDate" type="hidden" data-birthdate-value />
+                <div class="birthdate-picker" data-birthdate-picker>
+                  <input
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="4"
+                    placeholder="연도 검색"
+                    list="birthYearOptions"
+                    data-birthdate-part="year"
+                    aria-label="아이 생년월일 연도"
+                  />
+                  <select data-birthdate-part="month" aria-label="아이 생년월일 월"></select>
+                  <select data-birthdate-part="day" aria-label="아이 생년월일 일"></select>
+                </div>
+                <small class="field-hint">연도는 직접 입력하거나 목록에서 선택할 수 있어요.</small>
+              </label>
+              <label>
+                성별
+                <select name="childGender" required>
+                  <option value="">선택</option>
+                  <option value="male">남자아이</option>
+                  <option value="female">여자아이</option>
+                </select>
+              </label>
+            </div>
+            <button class="primary-button" type="submit">회원가입</button>
+          </form>
+          <p class="auth-switch">이미 계정이 있으신가요? <a href="#/login">로그인</a></p>
+        </article>
+      </section>
+
+      <section class="page app-page" id="homePage">
+        <div class="content-narrow">
+          <div class="hero-card">
+            <div>
+              <p class="eyebrow" id="homeGreeting">오늘도 아이의 건강을 차분히 살펴볼게요</p>
+              <h1>우리 아이 선택</h1>
+              <p class="subtle">등록된 아이를 선택한 뒤 문진, 진료 내역, 병원 추천으로 이동할 수 있습니다.</p>
+            </div>
+            <a class="primary-link" href="#/consultation">문진 시작</a>
+          </div>
+
+          <section class="section-block">
+            <div class="section-title">
+              <h2>우리 아이</h2>
+              <a href="#/mypage">아이 관리</a>
+            </div>
+            <div class="child-grid" id="homeChildList"></div>
+          </section>
+
+          <section class="quick-grid">
+            <a class="quick-card" href="#/consultation">
+              <span>문진하기</span>
+              <small>아이 증상 문진</small>
+            </a>
+            <a class="quick-card" href="#/history">
+              <span>진료 내역</span>
+              <small>지난 문진 확인</small>
+            </a>
+            <a class="quick-card" href="#/hospitals">
+              <span>병원 찾기</span>
+              <small>추천 진료과 기반</small>
+            </a>
+            <a class="quick-card" href="#/info">
+              <span>정보 보기</span>
+              <small>질환·예방접종 정보</small>
+            </a>
+          </section>
+        </div>
+      </section>
+
+      <section class="page app-page" id="consultationPage">
+        <div class="content-narrow">
+          <header class="page-header">
+            <p class="step-label">문진 입력</p>
+            <h1>아이의 증상을 입력해 주세요</h1>
+            <p class="subtle">직접 식별정보는 On-Prem 민감정보 API로 분리 저장됩니다.</p>
+          </header>
+          <form class="card form-card" id="questionnaireForm">
+            <label>
+              아이 선택
+              <select name="childId" id="childSelect" required></select>
+            </label>
+            <label>
+              어떤 증상이 있나요?
+              <textarea
+                name="symptomText"
+                placeholder="예: 열이 38도 정도 있어요. 기침을 하고 콧물이 나요. 밤에 잠을 잘 못 잤고 물은 조금 마셨어요."
+                required
+              ></textarea>
+            </label>
+            <button class="primary-button" type="submit">AI 문진 분석 시작</button>
+            <p class="disclaimer">본 서비스는 의료진의 진료를 대신하지 않습니다.</p>
+          </form>
+        </div>
+      </section>
+
+      <section class="page app-page" id="resultPage">
+        <div class="content-narrow">
+          <header class="page-header center">
+            <h1>문진 결과</h1>
+            <p class="subtle">AI 분석 결과는 의료진 진료 전 참고용 요약입니다.</p>
+          </header>
+          <article class="result-card" id="resultCard"></article>
+        </div>
+      </section>
+
+      <section class="page app-page" id="hospitalsPage">
+        <div class="content-wide">
+          <header class="page-header">
+            <h1>병원 추천</h1>
+            <p class="subtle">추천 진료과와 지역을 기준으로 주변 병원을 조회합니다. 추천 결과는 DB에 저장하지 않습니다.</p>
+          </header>
+          <form class="search-panel" id="hospitalForm">
+            <select name="department">
+              <option value="소아청소년과">소아청소년과</option>
+              <option value="이비인후과">이비인후과</option>
+              <option value="피부과">피부과</option>
+            </select>
+            <input name="region" placeholder="지역 예: 서울 강남구" />
+            <button class="primary-button" type="submit">검색</button>
+          </form>
+          <div class="hospital-grid" id="hospitalList"></div>
+        </div>
+      </section>
+
+      <section class="page app-page" id="historyPage">
+        <div class="content-narrow">
+          <header class="page-header">
+            <h1>진료 내역</h1>
+            <p class="subtle">아이별 문진 이력을 날짜순으로 확인할 수 있습니다.</p>
+          </header>
+          <div class="tab-toolbar">
+            <select id="historyChildFilter"></select>
+            <button class="ghost-button" id="loadHistoryButton" type="button">조회</button>
+          </div>
+          <div class="history-list" id="historyList"></div>
+        </div>
+      </section>
+
+      <section class="page app-page" id="mypagePage">
+        <div class="content-wide mypage-layout">
+          <aside class="profile-card">
+            <div class="profile-logo" aria-label="AiCloud 아이 돌봄 클라우드">
+              <span class="logo-cloud">AiCloud</span>
+              <span class="logo-caption">아이 돌봄 클라우드</span>
+            </div>
+            <h1>마이페이지</h1>
+            <div class="profile-summary" id="meBox"></div>
+          </aside>
+          <section class="card">
+            <div class="section-title">
+              <h2>아이 정보 관리</h2>
+            </div>
+            <form id="childForm">
+              <div class="two-col">
+                <label>
+                  아이 이름
+                  <input name="name" placeholder="아이 이름" required />
+                </label>
+                <label>
+                  아이의 생년월일
+                  <input name="birthDate" type="hidden" data-birthdate-value />
+                  <div class="birthdate-picker" data-birthdate-picker>
+                    <input
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="4"
+                      placeholder="연도 검색"
+                      list="birthYearOptions"
+                      data-birthdate-part="year"
+                      aria-label="아이 생년월일 연도"
+                    />
+                    <select data-birthdate-part="month" aria-label="아이 생년월일 월"></select>
+                    <select data-birthdate-part="day" aria-label="아이 생년월일 일"></select>
+                  </div>
+                  <small class="field-hint">연도는 직접 입력하거나 목록에서 선택할 수 있어요.</small>
+                </label>
+              </div>
+              <label>
+                성별
+                <select name="gender" required>
+                  <option value="male">남자아이</option>
+                  <option value="female">여자아이</option>
+                </select>
+              </label>
+              <button class="primary-button" type="submit">아이 추가</button>
+            </form>
+            <div class="child-grid compact" id="childList"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="page app-page" id="infoPage">
+        <div class="content-wide">
+          <header class="page-header">
+            <h1>정보공유</h1>
+            <p class="subtle">관리자가 제공하는 영유아 질환, 예방접종, 연령별 주의사항입니다.</p>
+          </header>
+          <form class="search-panel" id="infoSearchForm">
+            <input name="q" placeholder="검색어를 입력하세요" />
+            <button class="primary-button" type="submit">검색</button>
+          </form>
+          <form class="admin-panel" id="infoCreateForm" hidden>
+            <strong>관리자 글 작성</strong>
+            <input name="title" placeholder="제목" />
+            <textarea name="content" placeholder="내용"></textarea>
+            <button class="ghost-button" type="submit">등록</button>
+          </form>
+          <article class="info-detail" id="infoDetail"></article>
+          <div class="info-list" id="infoList"></div>
+        </div>
+      </section>
+    </main>
+
+    <datalist id="birthYearOptions"></datalist>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>

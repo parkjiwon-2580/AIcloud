@@ -1,6 +1,9 @@
 {
   "scripts": {
-    "start:dev": "nest start --watch"
+    "build": "prisma generate && nest build",
+    "start": "node dist/main.js",
+    "start:dev": "nest start --watch",
+    "prisma:validate": "prisma validate --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.917.0",
@@ -17,7 +20,7 @@
   },
   "devDependencies": {
     "@nestjs/cli": "^11.0.21",
-    "@types/node": "^25.9.1",
+    "@types/node": "^22.10.7",
     "prisma": "^6.18.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5"

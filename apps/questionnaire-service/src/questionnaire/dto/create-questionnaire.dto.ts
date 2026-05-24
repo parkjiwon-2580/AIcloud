@@ -1,13 +1,14 @@
-import {
-  IsInt,
-  IsString,
-} from 'class-validator';
+import { IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class CreateQuestionnaireDto {
-
-  @IsInt()
-  childId!: number;
+  @IsUUID()
+  childId!: string;
 
   @IsString()
+  @MinLength(1)
   symptomText!: string;
+
+  @IsOptional()
+  @IsUUID()
+  cloudUserId?: string;
 }
