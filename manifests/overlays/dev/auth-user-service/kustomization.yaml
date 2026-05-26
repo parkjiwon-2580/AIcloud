@@ -13,4 +13,4 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/auth-user-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/auth-user-service
-  newTag: 1369149fe4d2a22f0f5c95b83995229ac70cc3da
+  newTag: 617caae46a99c574837a62cff26b543fe87691d2

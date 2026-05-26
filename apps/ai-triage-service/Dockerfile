@@ -13,4 +13,4 @@ RUN DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/aicare npm 
 
 EXPOSE 3003
 
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/main.js"]
+CMD ["node", "dist/main.js"]
