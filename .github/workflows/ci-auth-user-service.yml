@@ -70,6 +70,15 @@ jobs:
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # 🚨 auth-user-service 전용 경로 적용 완료!
         git add manifests/overlays/dev/auth-user-service/kustomization.yaml
-        git commit -m "chore: update auth-user-service image tag to ${{ github.sha }}"
-        git push
+        
+        # 만약 커밋할 내용이 없으면 에러 내지 말고 넘어가도록 안전장치 추가
+        git commit -m "chore: update auth-user-service image tag to ${{ github.sha }}" || echo "No changes"
+        
+        # 🌟 [마스터 치트키] 다른 봇이 먼저 Push했다면 내 코드를 그 뒤에 줄 세우기 (Rebase)
+        git pull --rebase origin ${{ github.ref_name }}
+        
+        # 현재 실행 중인 브랜치로 안전하게 Push!
+        git push origin ${{ github.ref_name }}
