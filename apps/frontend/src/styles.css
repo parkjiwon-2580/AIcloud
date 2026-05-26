@@ -364,6 +364,13 @@ button,
   margin-bottom: 28px;
 }
 
+.admin-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
 .page-header h1 {
   margin-bottom: 8px;
 }
@@ -632,6 +639,57 @@ button,
   margin-bottom: 20px;
 }
 
+.admin-manage-link {
+  margin-top: 16px;
+}
+
+.admin-workspace {
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) 1fr;
+  gap: 20px;
+}
+
+.admin-editor-card {
+  align-self: start;
+}
+
+.admin-post-list {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-post-item,
+.todo-card {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: #f8fbff;
+}
+
+.admin-post-item {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.admin-post-item small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+}
+
+.todo-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-denied {
+  max-width: 560px;
+}
+
 .info-detail {
   display: grid;
   gap: 10px;
@@ -671,6 +729,8 @@ button,
   }
 
   .hero-card,
+  .admin-header,
+  .admin-post-item,
   .two-col,
   .form-row,
   .section-title,
@@ -681,6 +741,8 @@ button,
   .quick-grid,
   .hospital-grid,
   .mypage-layout,
+  .admin-workspace,
+  .todo-grid,
   .search-panel,
   .birthdate-picker {
     grid-template-columns: 1fr;

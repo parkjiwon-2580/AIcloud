@@ -8,6 +8,7 @@ import { questionnaireApi } from "./api/questionnaire.api.js";
 const LAST_CONSULTATION_KEY = "aicloud.lastConsultationId";
 
 const state = {
+  adminPosts: [],
   children: [],
   lastConsultationId: localStorage.getItem(LAST_CONSULTATION_KEY) || null,
   me: null,
@@ -123,6 +124,16 @@ function navigate(page) {
   location.hash = `#/${page}`;
 }
 
+function isAdmin() {
+  return state.me?.role === "ADMIN";
+}
+
+function updateRoleUi() {
+  document.querySelectorAll("[data-admin-nav], [data-admin-only]").forEach((element) => {
+    element.hidden = !isAdmin();
+  });
+}
+
 function renderNotice(targetId, title, message) {
   const target = document.getElementById(targetId);
   if (!target) return;
@@ -200,6 +211,7 @@ async function safeLoadMe(renderProfile = false) {
     state.me = await authApi.me();
   } catch (error) {
     state.me = null;
+    updateRoleUi();
     const message = friendlyApiError(error, "auth");
     if (renderProfile) {
       document.getElementById("meBox").innerHTML = `<p class="profile-error">${escapeHtml(message)}</p>`;
@@ -208,6 +220,8 @@ async function safeLoadMe(renderProfile = false) {
     if (greeting) greeting.textContent = message;
     return null;
   }
+
+  updateRoleUi();
 
   if (renderProfile) {
     document.getElementById("meBox").innerHTML = `
@@ -285,6 +299,7 @@ async function updateChild(childId) {
 }
 
 function setShell(pageName) {
+  updateRoleUi();
   document.querySelectorAll(".page").forEach((page) => page.classList.remove("is-active"));
   document.getElementById(`${pageName}Page`)?.classList.add("is-active");
   document.getElementById("topbar").classList.toggle("is-hidden", pageName === "login" || pageName === "signup");
@@ -293,8 +308,8 @@ function setShell(pageName) {
   });
 }
 
-function show(pageName = routeName()) {
-  const protectedPages = ["home", "consultation", "result", "hospitals", "history", "mypage", "info"];
+async function show(pageName = routeName()) {
+  const protectedPages = ["home", "consultation", "result", "hospitals", "history", "mypage", "info", "admin"];
   if (protectedPages.includes(pageName) && !getToken()) {
     pageName = "login";
   }
@@ -306,6 +321,7 @@ function show(pageName = routeName()) {
   if (pageName === "history") loadHistoryPage();
   if (pageName === "mypage") loadMypage();
   if (pageName === "info") loadInfoPage();
+  if (pageName === "admin") loadAdminPage();
   if (pageName === "hospitals") loadHospitals();
   if (pageName === "result") {
     showResult(routeQuery().get("id") || state.lastConsultationId);
@@ -561,14 +577,7 @@ async function loadHospitals(form = { department: "소아청소년과", region: 
 
 async function loadInfoPage() {
   await safeLoadMe();
-  renderAdminControls();
   await loadInfo();
-}
-
-function renderAdminControls() {
-  const form = document.getElementById("infoCreateForm");
-  if (!form) return;
-  form.hidden = state.me?.role !== "ADMIN";
 }
 
 async function loadInfo(q = "") {
@@ -585,7 +594,6 @@ async function loadInfo(q = "") {
     return;
   }
 
-  const isAdmin = state.me?.role === "ADMIN";
   document.getElementById("infoList").innerHTML = posts
     .map((post) => {
       const preview = String(post.content || "").slice(0, 140);
@@ -596,14 +604,6 @@ async function loadInfo(q = "") {
           <small>${escapeHtml(post.user?.nickname || "관리자")} · 조회수 ${escapeHtml(post.viewCount || 0)}</small>
           <div class="inline-actions">
             <button class="ghost-button slim" data-info-id="${escapeHtml(post.id)}" type="button">자세히 보기</button>
-            ${
-              isAdmin
-                ? `
-                  <button class="ghost-button slim" data-info-edit="${escapeHtml(post.id)}" type="button">수정</button>
-                  <button class="ghost-button slim danger" data-info-delete="${escapeHtml(post.id)}" type="button">삭제</button>
-                `
-                : ""
-            }
           </div>
         </article>
       `;
@@ -616,26 +616,6 @@ async function loadInfo(q = "") {
 function bindInfoButtons(posts) {
   document.querySelectorAll("[data-info-id]").forEach((button) => {
     button.addEventListener("click", () => loadInfoDetail(button.dataset.infoId));
-  });
-
-  document.querySelectorAll("[data-info-edit]").forEach((button) => {
-    button.addEventListener("click", () => {
-      const post = posts.find((item) => item.id === button.dataset.infoEdit);
-      if (post) updateInfoPost(post);
-    });
-  });
-
-  document.querySelectorAll("[data-info-delete]").forEach((button) => {
-    button.addEventListener("click", async () => {
-      if (!confirm("이 정보를 삭제할까요?")) return;
-      try {
-        await boardApi.deletePost(button.dataset.infoDelete);
-        document.getElementById("infoDetail").innerHTML = "";
-        await loadInfo();
-      } catch (error) {
-        alert(`삭제하지 못했습니다. ${friendlyApiError(error, "board")}`);
-      }
-    });
   });
 }
 
@@ -654,36 +634,139 @@ async function loadInfoDetail(id) {
   }
 }
 
-async function updateInfoPost(post) {
-  const title = prompt("제목", post.title);
-  if (title === null) return;
-  const content = prompt("내용", post.content);
-  if (content === null) return;
-
-  try {
-    await boardApi.updatePost(post.id, { title, content });
-    await loadInfo();
-    await loadInfoDetail(post.id);
-  } catch (error) {
-    alert(`수정하지 못했습니다. ${friendlyApiError(error, "board")}`);
-  }
-}
-
 document.getElementById("infoSearchForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   await loadInfo(formData(event.currentTarget).q);
 });
 
-document.getElementById("infoCreateForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
+async function loadAdminPage() {
+  const user = await safeLoadMe();
+  const gate = document.getElementById("adminGate");
+  const workspace = document.getElementById("adminWorkspace");
+  if (!user) {
+    workspace.hidden = true;
+    gate.innerHTML = `
+      <article class="info-card admin-denied">
+        <strong>로그인이 필요합니다</strong>
+        <p class="subtle">관리자 페이지는 로그인 후 이용할 수 있습니다.</p>
+        <a class="primary-link" href="#/login">로그인으로 이동</a>
+      </article>
+    `;
+    return;
+  }
+
+  if (!isAdmin()) {
+    workspace.hidden = true;
+    gate.innerHTML = `
+      <article class="info-card admin-denied">
+        <strong>관리자 권한이 필요합니다</strong>
+        <p class="subtle">현재 계정은 정보공유 글을 관리할 수 없습니다.</p>
+        <a class="primary-link" href="#/home">홈으로 이동</a>
+      </article>
+    `;
+    return;
+  }
+
+  gate.innerHTML = "";
+  workspace.hidden = false;
+  await loadAdminPosts();
+}
+
+function resetAdminPostForm() {
+  const form = document.getElementById("adminPostForm");
+  form.reset();
+  form.elements.postId.value = "";
+  document.getElementById("adminPostSubmitButton").textContent = "글 등록";
+  document.getElementById("adminPostStatus").textContent = "";
+}
+
+async function loadAdminPosts() {
+  let posts = [];
   try {
-    await boardApi.createPost(formData(event.currentTarget));
-    event.currentTarget.reset();
-    await loadInfo();
+    posts = await boardApi.posts();
   } catch (error) {
-    alert(`관리자 권한이 필요합니다. ${friendlyApiError(error, "board")}`);
+    renderNotice("adminPostList", "정보공유 글을 불러올 수 없습니다", friendlyApiError(error, "board"));
+    return;
+  }
+
+  state.adminPosts = posts;
+  if (!posts.length) {
+    renderNotice("adminPostList", "등록된 정보공유 글이 없습니다", "왼쪽 폼에서 첫 정보를 등록해 주세요.");
+    return;
+  }
+
+  document.getElementById("adminPostList").innerHTML = posts
+    .map(
+      (post) => `
+        <article class="admin-post-item">
+          <div>
+            <strong>${escapeHtml(post.title)}</strong>
+            <small>${escapeHtml(formatDateTime(post.createdAt))} · 조회수 ${escapeHtml(post.viewCount || 0)}</small>
+            <p class="subtle">${escapeHtml(String(post.content || "").slice(0, 110))}${String(post.content || "").length > 110 ? "..." : ""}</p>
+          </div>
+          <div class="inline-actions">
+            <button class="ghost-button slim" data-admin-edit="${escapeHtml(post.id)}" type="button">수정</button>
+            <button class="ghost-button slim danger" data-admin-delete="${escapeHtml(post.id)}" type="button">삭제</button>
+          </div>
+        </article>
+      `,
+    )
+    .join("");
+
+  document.querySelectorAll("[data-admin-edit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const post = state.adminPosts.find((item) => item.id === button.dataset.adminEdit);
+      if (!post) return;
+      const form = document.getElementById("adminPostForm");
+      form.elements.postId.value = post.id;
+      form.elements.title.value = post.title || "";
+      form.elements.content.value = post.content || "";
+      document.getElementById("adminPostSubmitButton").textContent = "수정 저장";
+      document.getElementById("adminPostStatus").textContent = "수정할 내용을 확인한 뒤 저장해 주세요.";
+      form.elements.title.focus();
+    });
+  });
+
+  document.querySelectorAll("[data-admin-delete]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      if (!confirm("이 정보공유 글을 삭제할까요?")) return;
+      try {
+        await boardApi.deletePost(button.dataset.adminDelete);
+        resetAdminPostForm();
+        await loadAdminPosts();
+      } catch (error) {
+        alert(`삭제하지 못했습니다. ${friendlyApiError(error, "board")}`);
+      }
+    });
+  });
+}
+
+document.getElementById("adminPostForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  if (!isAdmin()) {
+    alert("관리자 권한이 필요합니다.");
+    return;
+  }
+
+  const data = formData(event.currentTarget);
+  const payload = { title: data.title, content: data.content };
+  try {
+    const statusMessage = data.postId ? "정보공유 글이 수정되었습니다." : "정보공유 글이 등록되었습니다.";
+    if (data.postId) {
+      await boardApi.updatePost(data.postId, payload);
+    } else {
+      await boardApi.createPost(payload);
+    }
+    resetAdminPostForm();
+    document.getElementById("adminPostStatus").textContent = statusMessage;
+    await loadAdminPosts();
+  } catch (error) {
+    alert(`저장하지 못했습니다. ${friendlyApiError(error, "board")}`);
   }
 });
+
+document.getElementById("adminPostResetButton").addEventListener("click", resetAdminPostForm);
+document.getElementById("adminPostReloadButton").addEventListener("click", loadAdminPosts);
 
 window.addEventListener("hashchange", () => show(routeName()));
 
