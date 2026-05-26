@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { createHmac } from 'crypto';
 import { isDevEnv, readEnv } from './config';
 
@@ -12,7 +12,7 @@ export class RequestUserService {
   requireAdmin(authorization?: string): RequestUser {
     const user = this.requireUser(authorization);
     if (user.role !== 'ADMIN') {
-      throw new UnauthorizedException('Admin role required');
+      throw new ForbiddenException('Admin role required');
     }
     return user;
   }
