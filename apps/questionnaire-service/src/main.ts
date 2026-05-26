@@ -1,25 +1,24 @@
 import 'reflect-metadata';
 
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
+import { readEnv, readNumberEnv } from './config';
 
 async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
 
-  console.log('BOOTSTRAP START');
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
-  const app =
-    await NestFactory.create(
-      AppModule,
-    );
+  app.enableCors({
+    origin: readEnv('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:5173')
+      .split(',')
+      .map((origin) => origin.trim()),
+  });
 
-  console.log('APP CREATED');
-
-  app.enableCors();
-
-  await app.listen(3001);
-
-  console.log('SERVER RUNNING ON 3001');
+  const port = readNumberEnv('PORT', 3002);
+  await app.listen(port);
 }
 
 bootstrap();
