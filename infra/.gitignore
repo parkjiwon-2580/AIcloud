@@ -1,0 +1,17 @@
+.terraform/
+terraform.tfstate
+terraform.tfstate.*
+terraform.tfvars
+*.tfvars
+tfvars.env.local
+*.local
+.env
+.env.*
+!.env.example
+.generated/
+.DS_Store
+*.pem
+*.key
+*.crt
+tfplan
+*.tfplan

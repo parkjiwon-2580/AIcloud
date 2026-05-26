@@ -8,10 +8,14 @@ data:
   LOG_LEVEL: "INFO"
   TZ: "Asia/Seoul"
   AWS_REGION: "ap-northeast-2"
-  # S3 및 DB 설정 (값은 추후 인프라/데이터 담당자가 확정 시 변경)
-  S3_BUCKET_NAME: "placeholder-bucket-name"
-  S3_BOARD_IMAGE_PREFIX: "board/"
+  # 실제 S3 인프라 설정 반영
+  S3_BUCKET_NAME: "ai-care-dev-reports-105959916837"
+  S3_BOARD_IMAGE_PREFIX: "reports/"
   S3_PRESIGNED_URL_EXPIRE_SECONDS: "300"
+  # 실제 RDS 인프라 설정 반영 (DB 이름: aicare)
+  RDS_HOST: "ai-care-dev-postgres.czeumgqsmwh8.ap-northeast-2.rds.amazonaws.com"
   RDS_PORT: "5432"
-  RDS_DB_NAME: "hospital"
+  RDS_DB_NAME: "aicare"
+  RDS_USERNAME: "dbadmin"
+  # CORS 설정
   CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"

@@ -1,0 +1,92 @@
+# This file is an example.
+# Do not commit a real terraform.tfvars file.
+# Never put real secret values in Terraform variable files.
+# TF_VAR_ environment variables can also be used instead of terraform.tfvars.
+
+aws_region  = "ap-northeast-2"
+project_name = "ai-care"
+environment = "dev"
+tags         = {}
+
+# Console-managed Service network.
+service_vpc_id = "vpc-service-xxxxxxxx"
+
+service_public_subnet_ids = [
+  "subnet-service-public-a",
+  "subnet-service-public-c"
+]
+
+service_private_app_subnet_ids = [
+  "subnet-service-private-app-a",
+  "subnet-service-private-app-c"
+]
+
+service_private_data_subnet_ids = [
+  "subnet-service-private-data-a",
+  "subnet-service-private-data-c"
+]
+
+service_internet_gateway_id = "igw-service-xxxxxxxx"
+
+service_public_route_table_ids = [
+  "rtb-service-public-a",
+  "rtb-service-public-c"
+]
+
+# Must be the route table associated with the EKS worker node subnets. Current
+# dev worker node subnets are subnet-0399d1d5dc9043b69 and
+# subnet-05a7f50d03159ee6f. Do not put public or private data route table IDs
+# here, or nodes may miss NAT egress and fail with NodeCreationFailure.
+service_private_app_route_table_ids = [
+  "rtb-service-private-app-a",
+  "rtb-service-private-app-c"
+]
+
+service_private_data_route_table_ids = [
+  "rtb-service-private-data-a",
+  "rtb-service-private-data-c"
+]
+
+# Console-managed On-Prem network. Do not use the Service VPC IGW here.
+onprem_vpc_id                 = "vpc-onprem-xxxxxxxx"
+onprem_public_subnet_id       = "subnet-onprem-public"
+onprem_private_subnet_id      = "subnet-onprem-private"
+onprem_internet_gateway_id    = "igw-onprem-xxxxxxxx"
+onprem_public_route_table_id  = "rtb-onprem-public"
+onprem_private_route_table_id = "rtb-onprem-private"
+
+onprem_ec2_key_name = ""
+
+# Console-managed routes:
+# - Service Public Route Table: 0.0.0.0/0 -> Service IGW
+# - On-Prem Public Route Table: 0.0.0.0/0 -> On-Prem IGW
+#
+# Terraform-managed routes:
+# - Service Private App Route Table: 0.0.0.0/0 -> Service NAT Gateway
+# - Service Private App Route Table: 172.16.0.0/16 -> VGW
+# - On-Prem Private Route Table: 10.0.0.0/16 -> strongSwan ENI
+create_service_nat_gateway = true
+
+reports_bucket_name = "ai-care-dev-reports-<account-id>"
+reports_s3_prefix   = "reports/"
+
+cluster_public_access_cidrs = [
+  "x.x.x.x/32"
+]
+
+app_ecr_repository_names = [
+  "auth-user-service",
+  "questionnaire-service",
+  "ai-triage-service",
+  "hospital-recommendation-service",
+  "onprem-sensitive-api"
+]
+
+create_ai_processor_lambda = false
+ai_processor_image_uri     = ""
+
+enable_cicd                  = false
+create_github_oidc_provider = false
+github_oidc_provider_arn    = ""
+github_repository           = "zipgaskkukdp/hospital-service-app"
+github_branch               = "main"
