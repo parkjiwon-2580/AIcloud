@@ -13,4 +13,4 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend-service
-  newTag: 5cadad9e78e5cea5b973f9a0ca040cc89c18e2d2
+  newTag: f9e794ed4cdf0bfadda2b1a039e67380a97d2c15
