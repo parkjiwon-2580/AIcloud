@@ -273,3 +273,11 @@ On-Prem Sensitive API는 CI만 적용합니다. 배포는 ArgoCD가 아니라 EC
 실제 Secret은 Git에 올리지 않습니다. AWS Access Key, DB Password, JWT_SECRET, FIELD_ENCRYPTION_KEY, MAP_API_KEY, 인증서, kubeconfig, Terraform state와 tfvars 파일은 저장소에 커밋하지 않습니다.
 
 `.env.example`은 환경변수 이름과 placeholder만 제공하며, `.env` 파일은 만들지 않습니다. 운영 Secret은 AWS Secrets Manager 등 별도 Secret 관리 도구를 사용합니다.
+
+## GIthub Actions 모니터링 작업
+
+# DevToolHub
+
+![CI](https://github.com/Parkjiwon-2580/AIcloud/actions/workflows/ci.yml/badge.svg)
+
+
