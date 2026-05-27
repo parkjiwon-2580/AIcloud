@@ -183,6 +183,78 @@ module "eks" {
   ]
 }
 
+# jiyun
+resource "aws_eks_access_entry" "jiyun" {
+  cluster_name  = module.eks.eks_cluster_name
+  principal_arn = "arn:aws:iam::105959916837:user/jiyun"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "jiyun_admin" {
+  cluster_name  = module.eks.eks_cluster_name
+  principal_arn = "arn:aws:iam::105959916837:user/jiyun"
+
+  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
+# donghee
+resource "aws_eks_access_entry" "donghee" {
+  cluster_name  = module.eks.eks_cluster_name
+  principal_arn = "arn:aws:iam::105959916837:user/donghee"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "donghee_admin" {
+  cluster_name  = module.eks.eks_cluster_name
+  principal_arn = "arn:aws:iam::105959916837:user/donghee"
+
+  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
+# jiwon
+resource "aws_eks_access_entry" "jiwon" {
+  cluster_name  = module.eks.eks_cluster_name
+  principal_arn = "arn:aws:iam::105959916837:user/jiwon"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "jiwon_admin" {
+  cluster_name  = module.eks.eks_cluster_name
+  principal_arn = "arn:aws:iam::105959916837:user/jiwon"
+
+  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
+# hyeongwook
+resource "aws_eks_access_entry" "hyeongwook" {
+  cluster_name  = module.eks.eks_cluster_name
+  principal_arn = "arn:aws:iam::105959916837:user/hyeongwook"
+  type          = "STANDARD"
+}
+
+resource "aws_eks_access_policy_association" "hyeongwook_admin" {
+  cluster_name  = module.eks.eks_cluster_name
+  principal_arn = "arn:aws:iam::105959916837:user/hyeongwook"
+
+  policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+
+  access_scope {
+    type = "cluster"
+  }
+}
+
 resource "aws_vpc_security_group_ingress_rule" "rds_from_eks_cluster" {
   security_group_id            = module.security.rds_security_group_id
   referenced_security_group_id = module.eks.eks_cluster_security_group_id
