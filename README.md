@@ -276,14 +276,16 @@ On-Prem Sensitive API는 CI만 적용합니다. 배포는 ArgoCD가 아니라 EC
 
 ## GIthub Actions 모니터링 작업
 
-# 상태 배지
+# 상태 배지 (passing, failing 여부 확인 시 편리)
 
-![CI - ai-triage-service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-ai-triage-service.yml)/badge.svg)
-![CI - Auth User Service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-auth-user-service.yml)/badge.svg)
-![CI - Board Service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-board-service.yml)/badge.svg)
-![CI - Frontend Service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-frontend.yml)/badge.svg)
-![CI - Frontend Service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-hospital-recommendation-service.yml)/badge.svg)
-![CI - onprem-sensitive-api](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-onprem-sensitive-api.yml)/badge.svg)
-![CI - questionnaire-service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-questionnaire-service.yml)/badge.svg)
 [![CI - ai-triage-service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-ai-triage-service.yml/badge.svg)](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-ai-triage-service.yml)
+[![CI - Auth User Service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-auth-user-service.yml/badge.svg)](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-auth-user-service.yml)
+[![CI - Board Service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-board-service.yml/badge.svg)](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-board-service.yml)
+[![CI - Frontend Service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-frontend.yml/badge.svg)](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-frontend.yml)
+[![CI - hospital-recommendation-service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-hospital-recommendation-service.yml/badge.svg)](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-hospital-recommendation-service.yml)
+[![CI - onprem-sensitive-api](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-onprem-sensitive-api.yml/badge.svg)](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-onprem-sensitive-api.yml)
+[![CI - questionnaire-service](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-questionnaire-service.yml/badge.svg)](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-questionnaire-service.yml)
+
+
+
 
