@@ -7,7 +7,7 @@
 - name: Notify Slack
   uses: slackapi/slack-github-action@v1.24.0
   with:
-    channel-id: C0B1DKTGCLQ
+    channel-id: 'C0B1DKTGCLQ'
     payload: |
       {
         "text": "✅ Deployment to production succeeded"
