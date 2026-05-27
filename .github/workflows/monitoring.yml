@@ -23,7 +23,7 @@ jobs:
           channel-id: 'C0B1DKTGCLQ'
           payload: |
             {
-              "text": "✅ Deployment to production succeeded"
+              "text": "✅ Monitoring workflow succeeded\n📌 Repository: ${{ github.repository }}\n🌿 Branch: ${{ github.ref_name }}\n👤 User: ${{ github.actor }}\n📝 Commit: ${{ github.event.head_commit.message }}"
             }
         env:
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
