@@ -1,0 +1,15 @@
+- name: Debug Example
+  run: |
+    echo "::debug::Debugging this step"
+    echo "::warning::Something might be wrong"
+    echo "::error::Build failed here"
+
+- name: Notify Slack
+  uses: slackapi/slack-github-action@v1.24.0
+  with:
+    payload: |
+      {
+        "text": "✅ Deployment to production succeeded"
+      }
+  env:
+    SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
