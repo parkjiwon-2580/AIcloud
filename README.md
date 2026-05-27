@@ -276,8 +276,14 @@ On-Prem Sensitive API는 CI만 적용합니다. 배포는 ArgoCD가 아니라 EC
 
 ## GIthub Actions 모니터링 작업
 
-# DevToolHub
+# 상태 배지
 
-![CI](https://github.com/Parkjiwon-2580/AIcloud/actions/workflows/ci.yml/badge.svg)
+![CI-AI](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-ai-triage-service.yml)/badge.svg)
+![CI-AUTH](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-auth-user-service.yml)/badge.svg)
+![CI-BOARD](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-board-service.yml)/badge.svg)
+![CI-FRONTEND](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-frontend.yml)/badge.svg)
+![CI-SERVICE](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-hospital-recommendation-service.yml)/badge.svg)
+![CI-ONPREM](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-onprem-sensitive-api.yml)/badge.svg)
+![CI-QUESTIONNAIRE](https://github.com/parkjiwon-2580/AIcloud/actions/workflows/ci-questionnaire-service.yml)/badge.svg)
 
 
