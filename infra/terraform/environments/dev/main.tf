@@ -266,6 +266,19 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_eks_cluster" {
   tags = local.common_tags
 }
 
+resource "aws_vpc_security_group_ingress_rule" "rds_from_bastion" {
+  security_group_id            = module.security.rds_security_group_id
+  referenced_security_group_id = module.security.bastion_security_group_id
+
+  from_port  = var.postgres_port
+  to_port    = var.postgres_port
+  ip_protocol = "tcp"
+
+  description = "PostgreSQL from Bastion"
+
+  tags = local.common_tags
+}
+
 module "app_services" {
   source = "../../modules/app-services"
 
@@ -300,4 +313,19 @@ module "cicd" {
   create_github_eks_deploy_role = var.create_github_eks_deploy_role
   create_terraform_apply_role   = var.create_terraform_apply_role
   tags                          = local.common_tags
+}
+
+module "bastion" {
+  source = "../../modules/bastion"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  public_subnet_id = module.existing_network.public_subnet_ids[0]
+
+  bastion_security_group_id = module.security.bastion_security_group_id
+
+  key_name = var.bastion_key_name
+
+  tags = local.common_tags
 }

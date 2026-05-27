@@ -421,3 +421,7 @@ variable "create_terraform_apply_role" {
   type        = bool
   default     = false
 }
+
+variable "bastion_key_name" {
+  type = string
+}
