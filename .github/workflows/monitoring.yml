@@ -1,20 +1,28 @@
+name: monitoring
+
 on:
   push:
     branches:
       - feature/**
-- name: Debug Example
-  run: |
-    echo "::debug::Debugging this step"
-    echo "::warning::Something might be wrong"
-    echo "::error::Build failed here"
 
-- name: Notify Slack
-  uses: slackapi/slack-github-action@v1.24.0
-  with:
-    channel-id: 'C0B1DKTGCLQ'
-    payload: |
-      {
-        "text": "✅ Deployment to production succeeded"
-      }
-  env:
-    SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+jobs:
+  monitoring-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Validate Docker Compose
+        run: docker compose config
+      
+      - name: Notify Slack 
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: 'C0B1DKTGCLQ'
+          payload: |
+            {
+              "text": "✅ Deployment to production succeeded"
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
