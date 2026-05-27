@@ -3,7 +3,7 @@ name: monitoring
 on:
   push:
     branches:
-      - feature/**
+      - monitoring
 
 jobs:
   monitoring-check:
