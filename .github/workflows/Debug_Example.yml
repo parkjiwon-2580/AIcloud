@@ -1,0 +1,5 @@
+- name: Debug Example
+  run: |
+    echo "::debug::Debugging this step"
+    echo "::warning::Something might be wrong"
+    echo "::error::Build failed here"
