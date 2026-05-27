@@ -12,7 +12,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-
+      - name: Create .env file
+        run: touch .env
       - name: Validate Docker Compose
         run: docker compose config
       
