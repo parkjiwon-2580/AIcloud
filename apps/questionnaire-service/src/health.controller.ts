@@ -9,6 +9,6 @@ export class HealthController {
 
   @Get('db-health')
   dbHealth() {
-    return { status: 'skipped', reason: 'Prisma is disabled on the practice branch' };
+    return { status: 'skipped', reason: 'Database health check is disabled on the practice branch' };
   }
 }

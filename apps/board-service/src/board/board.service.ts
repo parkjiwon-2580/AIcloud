@@ -1,70 +1,95 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import { PrismaService } from '../prisma/prisma.service';
 import { RequestUserService } from '../request-user.service';
 import { BoardPostDto } from './dto/board.dto';
 
+interface BoardImageRecord {
+  id: string;
+  postId: string;
+  s3Key: string;
+  createdAt: Date;
+}
+
+interface BoardPostRecord {
+  id: string;
+  userId: string;
+  title: string;
+  content: string;
+  viewCount: number;
+  createdAt: Date;
+  updatedAt: Date;
+  images: BoardImageRecord[];
+  user: {
+    nickname: string;
+    role: string;
+  };
+}
+
 @Injectable()
 export class BoardService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly requestUser: RequestUserService,
-  ) {}
+  private readonly posts = new Map<string, BoardPostRecord>();
+
+  constructor(private readonly requestUser: RequestUserService) {}
 
   list(q?: string) {
-    return this.prisma.boardPost.findMany({
-      where: q
-        ? {
-            OR: [
-              { title: { contains: q, mode: 'insensitive' } },
-              { content: { contains: q, mode: 'insensitive' } },
-            ],
-          }
-        : undefined,
-      include: { images: true, user: { select: { nickname: true, role: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
+    const keyword = q?.toLowerCase();
+    return [...this.posts.values()]
+      .filter((post) => !keyword || post.title.toLowerCase().includes(keyword) || post.content.toLowerCase().includes(keyword))
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
   }
 
   async detail(id: string) {
-    const post = await this.prisma.boardPost.update({
-      where: { id },
-      data: { viewCount: { increment: 1 } },
-      include: { images: true, user: { select: { nickname: true, role: true } } },
-    }).catch(() => null);
+    const post = this.posts.get(id);
     if (!post) {
       throw new NotFoundException('Post not found');
     }
+    post.viewCount += 1;
+    post.updatedAt = new Date();
     return post;
   }
 
   async create(dto: BoardPostDto, authorization?: string) {
     const admin = this.requestUser.requireAdmin(authorization);
-    return this.prisma.boardPost.create({
-      data: {
+    const id = randomUUID();
+    const now = new Date();
+    const post: BoardPostRecord = {
+      id,
+      userId: admin.id,
+      title: dto.title,
+      content: dto.content,
+      viewCount: 0,
+      createdAt: now,
+      updatedAt: now,
+      images: (dto.imageS3Keys ?? []).map((s3Key) => ({
         id: randomUUID(),
-        userId: admin.id,
-        title: dto.title,
-        content: dto.content,
-        images: {
-          create: (dto.imageS3Keys ?? []).map((s3Key) => ({ id: randomUUID(), s3Key })),
-        },
+        postId: id,
+        s3Key,
+        createdAt: now,
+      })),
+      user: {
+        nickname: 'admin',
+        role: admin.role,
       },
-      include: { images: true },
-    });
+    };
+    this.posts.set(id, post);
+    return post;
   }
 
   async update(id: string, dto: BoardPostDto, authorization?: string) {
     this.requestUser.requireAdmin(authorization);
-    return this.prisma.boardPost.update({
-      where: { id },
-      data: { title: dto.title, content: dto.content },
-    });
+    const post = this.posts.get(id);
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+    post.title = dto.title;
+    post.content = dto.content;
+    post.updatedAt = new Date();
+    return post;
   }
 
   async remove(id: string, authorization?: string) {
     this.requestUser.requireAdmin(authorization);
-    await this.prisma.boardPost.delete({ where: { id } });
+    this.posts.delete(id);
     return { id, status: 'deleted' };
   }
 }

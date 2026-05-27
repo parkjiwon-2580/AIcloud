@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
-import { PrismaService } from '../prisma/prisma.service';
 import { isDevEnv, readEnv } from '../config';
 import { OnpremService } from '../onprem/onprem.service';
 import { ChildDto, ChildPatchDto, LoginDto, SignupDto } from './dto/auth.dto';
@@ -12,30 +11,36 @@ interface AuthUser {
   role: string;
 }
 
+interface AuthUserRecord extends AuthUser {
+  passwordHash: string;
+}
+
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly onprem: OnpremService,
-  ) {}
+  private readonly usersByEmail = new Map<string, AuthUserRecord>();
+  private readonly usersByNickname = new Map<string, AuthUserRecord>();
+
+  constructor(private readonly onprem: OnpremService) {}
 
   async signup(dto: SignupDto) {
-    if (await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } })) {
+    const email = dto.email.toLowerCase();
+    if (this.usersByEmail.has(email)) {
       throw new BadRequestException('Email already exists');
     }
-    if (await this.prisma.user.findUnique({ where: { nickname: dto.nickname } })) {
+    if (this.usersByNickname.has(dto.nickname)) {
       throw new BadRequestException('Nickname already exists');
     }
 
-    const user = await this.prisma.user.create({
-      data: {
-        id: randomUUID(),
-        email: dto.email.toLowerCase(),
-        nickname: dto.nickname,
-        passwordHash: this.hashPassword(dto.password),
-        role: 'USER',
-      },
-    });
+    const user: AuthUserRecord = {
+      id: randomUUID(),
+      email,
+      nickname: dto.nickname,
+      passwordHash: this.hashPassword(dto.password),
+      role: 'USER',
+    };
+    this.usersByEmail.set(user.email, user);
+    this.usersByNickname.set(user.nickname, user);
+
     await this.onprem.createProfile(user.id);
     const initialChildId = await this.onprem.createChild({
       cloudUserId: user.id,
@@ -53,7 +58,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
+    const user = this.usersByEmail.get(dto.email.toLowerCase());
     if (!user || !this.verifyPassword(dto.password, user.passwordHash)) {
       throw new UnauthorizedException('Invalid email or password');
     }
