@@ -39,6 +39,11 @@ resource "aws_eks_cluster" "this" {
   role_arn = aws_iam_role.cluster.arn
   version  = var.cluster_version
 
+  access_config {
+    authentication_mode = "API_AND_CONFIG_MAP"
+  }
+
+
   vpc_config {
     subnet_ids              = var.private_app_subnet_ids
     security_group_ids      = [var.eks_node_security_group_id]
