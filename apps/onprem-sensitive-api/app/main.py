@@ -1,6 +1,10 @@
 from typing import Any
 from uuid import UUID, uuid4
 
+from app.routers.analyze_router import (
+    router as analyze_router
+)
+
 from fastapi import Depends, FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from sqlalchemy import text
@@ -159,3 +163,7 @@ def create_consultation(request: ConsultationRequest, db: Session = Depends(get_
     db.commit()
     db.refresh(consultation)
     return {"id": consultation.id, "consultation_id": consultation.consultation_id}
+
+app.include_router(
+    analyze_router
+)
