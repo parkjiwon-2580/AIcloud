@@ -2,6 +2,10 @@
   "name": "frontend",
   "version": "1.0.0",
   "scripts": {
-    "build": "mkdir -p dist && cp index.html dist/index.html && cp -R src dist/src"
+    "dev": "vite",
+    "build": "vite build"
+  },
+  "dependencies": {
+    "vite": "^8.0.14"
   }
 }
