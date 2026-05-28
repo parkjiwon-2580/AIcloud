@@ -272,15 +272,19 @@
 
       <section class="page app-page" id="infoPage">
         <div class="content-wide">
-          <header class="page-header">
-            <h1>정보공유</h1>
-            <p class="subtle">관리자가 제공하는 영유아 질환, 예방접종, 연령별 주의사항입니다.</p>
-            <a class="primary-link admin-manage-link" href="#/admin" data-admin-only hidden>관리자에서 글 관리하기</a>
+          <header class="page-header info-hero">
+            <div class="info-hero-visual" aria-hidden="true">
+              <span class="baby-face">아이</span>
+            </div>
+            <div>
+              <p class="step-label">정보공유</p>
+              <h1>월령별 아이 건강 가이드</h1>
+              <p class="subtle">아이의 월령에 맞는 예방접종, 발달, 영양, 주의사항 정보를 확인해보세요.</p>
+              <div class="age-filter-bar" id="infoAgeFilters" aria-label="월령 필터"></div>
+              <a class="primary-link admin-manage-link" href="#/admin" data-admin-only hidden>관리자에서 콘텐츠 관리하기</a>
+            </div>
           </header>
-          <form class="search-panel" id="infoSearchForm">
-            <input name="q" placeholder="검색어를 입력하세요" />
-            <button class="primary-button" type="submit">검색</button>
-          </form>
+          <p class="fallback-note" id="infoFallbackNotice" hidden>등록된 콘텐츠가 없어 로컬 샘플 콘텐츠를 보여줍니다.</p>
           <article class="info-detail" id="infoDetail"></article>
           <div class="info-list" id="infoList"></div>
         </div>
@@ -307,13 +311,38 @@
               </div>
               <form id="adminPostForm">
                 <input name="postId" type="hidden" />
+                <div class="two-col">
+                  <label>
+                    카테고리
+                    <select name="category" required>
+                      <option value="예방접종">예방접종</option>
+                      <option value="질환정보">질환정보</option>
+                      <option value="주의사항">주의사항</option>
+                      <option value="발달">발달</option>
+                      <option value="영양">영양</option>
+                      <option value="응급징후">응급징후</option>
+                      <option value="공지">공지</option>
+                    </select>
+                  </label>
+                  <label>
+                    대상 월령
+                    <select name="targetAgeMonths" required>
+                      <option value="전체">전체</option>
+                      <option value="0-6">0-6</option>
+                      <option value="7-12">7-12</option>
+                      <option value="13-24">13-24</option>
+                      <option value="25-36">25-36</option>
+                      <option value="37-60">37-60</option>
+                    </select>
+                  </label>
+                </div>
                 <label>
                   제목
-                  <input name="title" placeholder="예: 영유아 감기 관리 방법" required />
+                  <input name="title" placeholder="예: 생후 초기 예방접종 체크" required />
                 </label>
                 <label>
                   내용
-                  <textarea name="content" placeholder="보호자가 참고할 수 있는 정보를 입력해 주세요." required></textarea>
+                  <textarea name="content" placeholder="보호자가 참고할 수 있는 월령별 건강 정보를 입력해 주세요." required></textarea>
                 </label>
                 <div class="inline-actions">
                   <button class="primary-button" type="submit" id="adminPostSubmitButton">글 등록</button>
