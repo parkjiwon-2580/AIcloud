@@ -1,8 +1,12 @@
 import { request } from "./client.js";
 
 export const boardApi = {
-  posts(q = "") {
-    const query = q ? `?q=${encodeURIComponent(q)}` : "";
+  posts({ targetAgeMonths = "" } = {}) {
+    const params = new URLSearchParams();
+    if (targetAgeMonths && targetAgeMonths !== "전체") {
+      params.set("targetAgeMonths", targetAgeMonths);
+    }
+    const query = params.toString() ? `?${params.toString()}` : "";
     return request("board", `/info/posts${query}`);
   },
 

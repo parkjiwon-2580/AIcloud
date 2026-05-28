@@ -7,9 +7,144 @@ import { questionnaireApi } from "./api/questionnaire.api.js";
 
 const LAST_CONSULTATION_KEY = "aicloud.lastConsultationId";
 
+const AGE_FILTERS = [
+  { label: "전체", value: "전체" },
+  { label: "0~6개월", value: "0-6" },
+  { label: "7~12개월", value: "7-12" },
+  { label: "13~24개월", value: "13-24" },
+  { label: "25~36개월", value: "25-36" },
+  { label: "37~60개월", value: "37-60" },
+];
+
+const INFO_CATEGORIES = ["예방접종", "주의사항", "발달", "영양", "질환정보", "응급징후", "공지"];
+
+const SAMPLE_INFO_POSTS = [
+  {
+    id: "sample-emergency-all",
+    category: "응급징후",
+    targetAgeMonths: "전체",
+    title: "바로 진료가 필요한 증상",
+    content:
+      "고열이 지속되거나 호흡이 힘들어 보임, 경련, 의식 저하, 탈수 증상이 의심되는 경우에는 지체하지 말고 의료기관에 문의하거나 진료를 받는 것이 좋습니다.",
+    viewCount: 311,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-ai-notice-all",
+    category: "주의사항",
+    targetAgeMonths: "전체",
+    title: "AI 결과는 참고용입니다",
+    content:
+      "Ai클라우드의 문진 결과는 병원 방문 전 증상 정리를 돕기 위한 참고용이며, 의료진의 진단을 대체하지 않습니다.",
+    viewCount: 212,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-vaccine-0-6",
+    category: "예방접종",
+    targetAgeMonths: "0-6",
+    title: "생후 초기 예방접종 체크",
+    content:
+      "생후 초기에는 여러 예방접종 일정이 포함될 수 있습니다. 접종 시기와 차수는 아이의 출생일과 이전 접종 이력에 따라 달라질 수 있으므로, 질병관리청 예방접종도우미 또는 의료기관 안내를 확인하세요.",
+    viewCount: 128,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-fever-0-6",
+    category: "주의사항",
+    targetAgeMonths: "0-6",
+    title: "생후 초기 발열 시 주의",
+    content:
+      "어린 영아의 발열은 보호자가 임의로 판단하기보다 아이의 컨디션, 수유량, 호흡 상태를 함께 관찰하고 필요 시 의료기관에 문의하는 것이 좋습니다.",
+    viewCount: 143,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-food-7-12",
+    category: "영양",
+    targetAgeMonths: "7-12",
+    title: "이유식 시작 시 확인할 점",
+    content:
+      "새로운 음식을 시작할 때는 한 번에 여러 가지를 섞기보다 하나씩 천천히 시도하면서 발진, 구토, 설사 등 이상 반응을 관찰하는 것이 좋습니다.",
+    viewCount: 117,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-crawling-7-12",
+    category: "발달",
+    targetAgeMonths: "7-12",
+    title: "기어다니기 시기 안전관리",
+    content:
+      "아이가 기어다니기 시작하면 작은 물건 삼킴, 콘센트, 모서리, 낙상 위험을 줄이기 위해 생활 공간을 점검하는 것이 좋습니다.",
+    viewCount: 96,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-walk-13-24",
+    category: "발달",
+    targetAgeMonths: "13-24",
+    title: "걷기 시작 시기 안전관리",
+    content:
+      "걷기 시작하면 낙상과 충돌 위험이 늘어납니다. 미끄럼 방지, 모서리 보호, 계단 접근 차단 등 실내 안전 환경을 점검하세요.",
+    viewCount: 88,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-infection-13-24",
+    category: "주의사항",
+    targetAgeMonths: "13-24",
+    title: "감염 증상 관찰하기",
+    content:
+      "외부 활동이 늘어나면 감기, 장염 등 감염 증상이 나타날 수 있습니다. 열, 수분 섭취, 소변량, 활동성을 함께 관찰하세요.",
+    viewCount: 122,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-toilet-25-36",
+    category: "발달",
+    targetAgeMonths: "25-36",
+    title: "배변훈련 준비하기",
+    content:
+      "배변훈련은 아이의 준비 상태에 따라 천천히 진행하는 것이 좋습니다. 실패를 혼내기보다 반복적인 루틴을 만들어주는 것이 도움이 됩니다.",
+    viewCount: 73,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-burn-25-36",
+    category: "주의사항",
+    targetAgeMonths: "25-36",
+    title: "화상과 삼킴 사고 예방",
+    content: "뜨거운 음식, 전기포트, 작은 장난감, 동전, 약품은 아이 손이 닿지 않는 곳에 보관하세요.",
+    viewCount: 104,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-daycare-37-60",
+    category: "질환정보",
+    targetAgeMonths: "37-60",
+    title: "어린이집 감염질환 주의",
+    content:
+      "단체 생활을 하면서 감기, 수족구, 장염 등 감염질환 노출이 늘 수 있습니다. 손씻기와 개인 물품 관리가 중요합니다.",
+    viewCount: 156,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+  {
+    id: "sample-language-37-60",
+    category: "발달",
+    targetAgeMonths: "37-60",
+    title: "언어와 사회성 관찰",
+    content:
+      "또래와의 상호작용, 말하기, 감정 표현이 활발해지는 시기입니다. 발달에 대한 걱정이 있다면 전문기관이나 의료진 상담을 고려할 수 있습니다.",
+    viewCount: 81,
+    createdAt: "2026-05-26T00:00:00.000Z",
+  },
+];
+
 const state = {
   adminPosts: [],
   children: [],
+  infoAgeFilter: "전체",
+  infoPosts: [],
   lastConsultationId: localStorage.getItem(LAST_CONSULTATION_KEY) || null,
   me: null,
 };
@@ -110,6 +245,41 @@ function formatDateTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function formatDate(value) {
+  if (!value) return "날짜 미기재";
+  return new Date(value).toLocaleDateString("ko-KR", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+}
+
+function normalizeAgeValue(value) {
+  return value || "전체";
+}
+
+function ageLabel(value) {
+  const normalized = normalizeAgeValue(value);
+  return AGE_FILTERS.find((item) => item.value === normalized)?.label || normalized;
+}
+
+function normalizeInfoPost(post) {
+  return {
+    ...post,
+    admin: post.admin || post.user,
+    category: post.category || "공지",
+    targetAgeMonths: post.targetAgeMonths || post.target_age_months || "전체",
+    viewCount: post.viewCount ?? post.view_count ?? 0,
+    createdAt: post.createdAt || post.created_at,
+  };
+}
+
+function samplePostsForAge(targetAgeMonths = "전체") {
+  return SAMPLE_INFO_POSTS.filter(
+    (post) => targetAgeMonths === "전체" || post.targetAgeMonths === "전체" || post.targetAgeMonths === targetAgeMonths,
+  );
 }
 
 function routeName() {
@@ -577,67 +747,138 @@ async function loadHospitals(form = { department: "소아청소년과", region: 
 
 async function loadInfoPage() {
   await safeLoadMe();
-  await loadInfo();
+  renderAgeFilter();
+  await loadInfo(state.infoAgeFilter);
 }
 
-async function loadInfo(q = "") {
+function renderAgeFilter() {
+  const target = document.getElementById("infoAgeFilters");
+  if (!target) return;
+  target.innerHTML = AGE_FILTERS.map(
+    (filter) => `
+      <button
+        class="age-chip ${filter.value === state.infoAgeFilter ? "is-active" : ""}"
+        type="button"
+        data-age-filter="${escapeHtml(filter.value)}"
+      >
+        ${escapeHtml(filter.label)}
+      </button>
+    `,
+  ).join("");
+
+  document.querySelectorAll("[data-age-filter]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      state.infoAgeFilter = button.dataset.ageFilter || "전체";
+      document.getElementById("infoDetail").innerHTML = "";
+      renderAgeFilter();
+      await loadInfo(state.infoAgeFilter);
+    });
+  });
+}
+
+async function loadInfo(targetAgeMonths = "전체") {
   let posts = [];
   try {
-    posts = await boardApi.posts(q);
+    posts = (await boardApi.posts({ targetAgeMonths })).map(normalizeInfoPost);
   } catch (error) {
-    renderNotice("infoList", "정보공유 콘텐츠를 불러올 수 없습니다", friendlyApiError(error, "board"));
-    return;
+    posts = samplePostsForAge(targetAgeMonths);
+    const fallback = document.getElementById("infoFallbackNotice");
+    if (fallback) {
+      fallback.textContent = `서비스 연결이 원활하지 않아 로컬 샘플 콘텐츠를 보여줍니다. ${friendlyApiError(error, "board")}`;
+      fallback.hidden = false;
+    }
   }
 
   if (!posts.length) {
-    renderNotice("infoList", "등록된 정보가 없습니다", "관리자 콘텐츠가 등록되면 이곳에 표시됩니다.");
+    posts = samplePostsForAge(targetAgeMonths);
+  }
+
+  if (!posts.length) {
+    renderNotice("infoList", "등록된 정보가 없습니다", "관리자 콘텐츠가 등록되면 월령별로 표시됩니다.");
     return;
   }
 
-  document.getElementById("infoList").innerHTML = posts
-    .map((post) => {
-      const preview = String(post.content || "").slice(0, 140);
-      return `
-        <article class="info-card">
-          <strong>${escapeHtml(post.title)}</strong>
-          <p class="subtle">${escapeHtml(preview)}${String(post.content || "").length > 140 ? "..." : ""}</p>
-          <small>${escapeHtml(post.user?.nickname || "관리자")} · 조회수 ${escapeHtml(post.viewCount || 0)}</small>
-          <div class="inline-actions">
-            <button class="ghost-button slim" data-info-id="${escapeHtml(post.id)}" type="button">자세히 보기</button>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
+  const fallback = document.getElementById("infoFallbackNotice");
+  if (fallback && posts.some((post) => String(post.id).startsWith("sample-"))) {
+    fallback.hidden = false;
+  } else if (fallback) {
+    fallback.hidden = true;
+  }
+
+  state.infoPosts = posts;
+  document.getElementById("infoList").innerHTML = INFO_CATEGORIES.map((category) => {
+    const categoryPosts = posts.filter((post) => post.category === category);
+    if (!categoryPosts.length) return "";
+    return `
+      <section class="info-category-section">
+        <h2><span>${escapeHtml(category)}</span></h2>
+        <div class="guide-card-grid">
+          ${categoryPosts
+            .map((post) => {
+              const preview = String(post.content || "").slice(0, 126);
+              return `
+                <article class="guide-card" data-info-card="${escapeHtml(post.id)}" tabindex="0">
+                  <div class="guide-badges">
+                    <span class="age-badge">${escapeHtml(ageLabel(post.targetAgeMonths))}</span>
+                    <span class="category-badge">${escapeHtml(post.category)}</span>
+                  </div>
+                  <strong>${escapeHtml(post.title)}</strong>
+                  <p>${escapeHtml(preview)}${String(post.content || "").length > 126 ? "..." : ""}</p>
+                  <footer>
+                    <span>${escapeHtml(formatDate(post.createdAt))}</span>
+                    <span>조회 ${escapeHtml(post.viewCount || 0)}</span>
+                  </footer>
+                  <button class="text-arrow" data-info-id="${escapeHtml(post.id)}" type="button">자세히 보기</button>
+                </article>
+              `;
+            })
+            .join("")}
+        </div>
+      </section>
+    `;
+  }).join("");
 
   bindInfoButtons(posts);
 }
 
-function bindInfoButtons(posts) {
+function bindInfoButtons() {
   document.querySelectorAll("[data-info-id]").forEach((button) => {
-    button.addEventListener("click", () => loadInfoDetail(button.dataset.infoId));
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      loadInfoDetail(button.dataset.infoId);
+    });
+  });
+  document.querySelectorAll("[data-info-card]").forEach((card) => {
+    card.addEventListener("click", () => loadInfoDetail(card.dataset.infoCard));
+    card.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        loadInfoDetail(card.dataset.infoCard);
+      }
+    });
   });
 }
 
 async function loadInfoDetail(id) {
+  const sample = state.infoPosts.find((post) => post.id === id && String(post.id).startsWith("sample-"));
   try {
-    const post = await boardApi.post(id);
+    const post = sample || normalizeInfoPost(await boardApi.post(id));
     document.getElementById("infoDetail").innerHTML = `
+      <div class="guide-badges">
+        <span class="age-badge">${escapeHtml(ageLabel(post.targetAgeMonths))}</span>
+        <span class="category-badge">${escapeHtml(post.category)}</span>
+      </div>
       <strong>${escapeHtml(post.title)}</strong>
-      <p class="subtle">${escapeHtml(post.content)}</p>
-      <small>${escapeHtml(post.user?.nickname || "관리자")} · ${escapeHtml(formatDateTime(post.createdAt))} · 조회수 ${escapeHtml(
-        post.viewCount || 0,
-      )}</small>
+      <p>${escapeHtml(post.content)}</p>
+      <small>${escapeHtml(post.admin?.nickname || "관리자")} · ${escapeHtml(formatDate(post.createdAt))} · 조회 ${escapeHtml(post.viewCount || 0)}</small>
+      <div class="info-disclaimer">
+        이 정보는 일반적인 건강 정보 제공 목적이며, 아이의 상태에 따라 다를 수 있습니다. 정확한 접종 일정과 진료 판단은 의료진 또는 보건소에 확인하세요.
+      </div>
     `;
   } catch (error) {
     renderNotice("infoDetail", "상세 정보를 불러올 수 없습니다", friendlyApiError(error, "board"));
   }
 }
-
-document.getElementById("infoSearchForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  await loadInfo(formData(event.currentTarget).q);
-});
 
 async function loadAdminPage() {
   const user = await safeLoadMe();
@@ -683,7 +924,7 @@ function resetAdminPostForm() {
 async function loadAdminPosts() {
   let posts = [];
   try {
-    posts = await boardApi.posts();
+    posts = (await boardApi.posts()).map(normalizeInfoPost);
   } catch (error) {
     renderNotice("adminPostList", "정보공유 글을 불러올 수 없습니다", friendlyApiError(error, "board"));
     return;
@@ -700,6 +941,10 @@ async function loadAdminPosts() {
       (post) => `
         <article class="admin-post-item">
           <div>
+            <div class="guide-badges">
+              <span class="age-badge">${escapeHtml(ageLabel(post.targetAgeMonths))}</span>
+              <span class="category-badge">${escapeHtml(post.category)}</span>
+            </div>
             <strong>${escapeHtml(post.title)}</strong>
             <small>${escapeHtml(formatDateTime(post.createdAt))} · 조회수 ${escapeHtml(post.viewCount || 0)}</small>
             <p class="subtle">${escapeHtml(String(post.content || "").slice(0, 110))}${String(post.content || "").length > 110 ? "..." : ""}</p>
@@ -719,6 +964,8 @@ async function loadAdminPosts() {
       if (!post) return;
       const form = document.getElementById("adminPostForm");
       form.elements.postId.value = post.id;
+      form.elements.category.value = post.category || "예방접종";
+      form.elements.targetAgeMonths.value = post.targetAgeMonths || "전체";
       form.elements.title.value = post.title || "";
       form.elements.content.value = post.content || "";
       document.getElementById("adminPostSubmitButton").textContent = "수정 저장";
@@ -749,7 +996,12 @@ document.getElementById("adminPostForm").addEventListener("submit", async (event
   }
 
   const data = formData(event.currentTarget);
-  const payload = { title: data.title, content: data.content };
+  const payload = {
+    category: data.category,
+    targetAgeMonths: data.targetAgeMonths,
+    title: data.title,
+    content: data.content,
+  };
   try {
     const statusMessage = data.postId ? "정보공유 글이 수정되었습니다." : "정보공유 글이 등록되었습니다.";
     if (data.postId) {

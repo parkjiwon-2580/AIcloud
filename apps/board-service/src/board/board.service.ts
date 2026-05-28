@@ -11,17 +11,15 @@ export class BoardService {
     private readonly requestUser: RequestUserService,
   ) {}
 
-  list(q?: string) {
+  list(targetAgeMonths?: string) {
+    const target = targetAgeMonths?.trim();
     return this.prisma.boardPost.findMany({
-      where: q
+      where: target && target !== '전체'
         ? {
-            OR: [
-              { title: { contains: q, mode: 'insensitive' } },
-              { content: { contains: q, mode: 'insensitive' } },
-            ],
+            OR: [{ targetAgeMonths: target }, { targetAgeMonths: '전체' }],
           }
         : undefined,
-      include: { images: true, user: { select: { nickname: true, role: true } } },
+      include: { images: true, admin: { select: { nickname: true, role: true } } },
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -30,7 +28,7 @@ export class BoardService {
     const post = await this.prisma.boardPost.update({
       where: { id },
       data: { viewCount: { increment: 1 } },
-      include: { images: true, user: { select: { nickname: true, role: true } } },
+      include: { images: true, admin: { select: { nickname: true, role: true } } },
     }).catch(() => null);
     if (!post) {
       throw new NotFoundException('Post not found');
@@ -43,7 +41,9 @@ export class BoardService {
     return this.prisma.boardPost.create({
       data: {
         id: randomUUID(),
-        userId: admin.id,
+        adminId: admin.id,
+        category: dto.category,
+        targetAgeMonths: dto.targetAgeMonths,
         title: dto.title,
         content: dto.content,
         images: {
@@ -58,7 +58,12 @@ export class BoardService {
     this.requestUser.requireAdmin(authorization);
     return this.prisma.boardPost.update({
       where: { id },
-      data: { title: dto.title, content: dto.content },
+      data: {
+        category: dto.category,
+        targetAgeMonths: dto.targetAgeMonths,
+        title: dto.title,
+        content: dto.content,
+      },
     });
   }
 
