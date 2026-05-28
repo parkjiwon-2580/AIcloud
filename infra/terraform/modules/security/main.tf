@@ -181,3 +181,31 @@ resource "aws_vpc_security_group_egress_rule" "all" {
 
   tags = var.tags
 }
+
+resource "aws_security_group" "bastion" {
+  name_prefix = "${local.name_prefix}-bastion-sg"
+  vpc_id      = var.service_vpc_id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+
+    cidr_blocks = ["121.134.211.97/32",
+    "122.35.216.132/32"]
+
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = merge(var.tags, {
+    Name = "${local.name_prefix}-bastion-sg"
+  })
+}

@@ -1,4 +1,51 @@
 import {
+<<<<<<< HEAD
+  Injectable,
+} from '@nestjs/common';
+
+import { randomUUID }
+  from 'crypto';
+
+import axios from 'axios';
+
+import { CreateQuestionnaireDto }
+  from './dto/create-questionnaire.dto';
+
+@Injectable()
+export class QuestionnaireService {
+
+  async create(
+    dto: CreateQuestionnaireDto,
+  ) {
+
+    const response =
+      await axios.post(
+
+        'http://localhost:9000/internal/sensitive/consultation',
+
+        {
+
+          consultation_id:
+            randomUUID(),
+
+          cloud_user_id:
+            randomUUID(),
+
+          raw_payload: {
+
+            childId:
+              dto.childId,
+
+            symptomText:
+              dto.symptomText,
+          },
+        },
+      );
+
+    return response.data;
+  }
+}
+=======
   BadRequestException,
   ForbiddenException,
   Injectable,
@@ -162,3 +209,4 @@ export class QuestionnaireService {
     return keywords.length > 0 ? `${keywords.join('·')} 증상` : '증상 입력';
   }
 }
+>>>>>>> f0087804447545af148c4103bb4b34db1b426fdf
