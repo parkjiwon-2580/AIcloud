@@ -26,3 +26,7 @@ kubeconfig
 __pycache__/
 .venv/
 venv/
+eksctl.*
+eksctl_*
+secret.yaml
+*secret.yaml
