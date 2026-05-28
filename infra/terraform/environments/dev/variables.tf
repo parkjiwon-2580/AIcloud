@@ -395,7 +395,7 @@ variable "github_oidc_provider_arn" {
 variable "github_repository" {
   description = "GitHub repository in owner/name format."
   type        = string
-  default     = "zipgaskkukdp/hospital-service-app"
+  default     = "parkjiwon-2580/AIcloud"
 }
 
 variable "github_branch" {
@@ -420,4 +420,8 @@ variable "create_terraform_apply_role" {
   description = "Whether to create a placeholder Terraform apply role."
   type        = bool
   default     = false
+}
+
+variable "bastion_key_name" {
+  type = string
 }

@@ -7,6 +7,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+<<<<<<< HEAD
+model Child {
+
+  id Int @id @default(autoincrement())
+
+  name String
+
+  ageMonths Int
+
+  weight Float
+
+  questionnaires Questionnaire[]
+}
+
+model Questionnaire {
+
+  id Int @id @default(autoincrement())
+
+  childId Int
+
+  symptomText String
+
+  status String @default("PENDING")
+
+  createdAt DateTime @default(now())
+
+  child Child
+    @relation(fields: [childId], references: [id])
+}
+
+model QuestionnaireResult {
+
+  id Int @id @default(autoincrement())
+
+  questionnaireId Int
+
+  symptoms Json
+
+  dangerSigns Json
+
+  riskLevel String
+
+  summary String
+
+  pdfUrl String?
+
+  createdAt DateTime @default(now())
+}
+=======
 model User {
   id           String   @id @db.Uuid
   email        String   @unique
@@ -61,3 +110,4 @@ model ConsultationAsset {
   @@index([consultationId])
   @@map("consultation_assets")
 }
+>>>>>>> f0087804447545af148c4103bb4b34db1b426fdf

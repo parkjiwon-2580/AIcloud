@@ -65,11 +65,20 @@ jobs:
         # Kustomize를 이용해 deployment.yaml의 이미지 주소를 새 버전으로 덮어씁니다.
         kustomize edit set image 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service:latest=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
-    # 3. 변경된 K8s 설정 파일을 Git에 자동 커밋 & 푸시
+  # 3. 변경된 K8s 설정 파일을 Git에 자동 커밋 & 푸시
     - name: Commit and push changes
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        
+        # 🚨 board-service 전용 경로 적용 완료!
         git add manifests/overlays/dev/board-service/kustomization.yaml
-        git commit -m "chore: update board-service image tag to ${{ github.sha }}"
-        git push
+        
+        # 만약 커밋할 내용이 없으면 에러 내지 말고 넘어가도록 안전장치 추가
+        git commit -m "chore: update board-service image tag to ${{ github.sha }}" || echo "No changes"
+        
+        # 🌟 [마스터 치트키] 다른 봇이 먼저 Push했다면 내 코드를 그 뒤에 줄 세우기 (Rebase)
+        git pull --rebase origin ${{ github.ref_name }}
+        
+        # 현재 실행 중인 브랜치로 안전하게 Push!
+        git push origin ${{ github.ref_name }}
