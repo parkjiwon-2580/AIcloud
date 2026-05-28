@@ -1,30 +1,6 @@
 import 'reflect-metadata';
 
 import { NestFactory } from '@nestjs/core';
-<<<<<<< HEAD
-
-import { AppModule } from './app.module';
-
-async function bootstrap() {
-
-  console.log('BOOTSTRAP START');
-
-  const app =
-    await NestFactory.create(
-      AppModule,
-    );
-
-  console.log('APP CREATED');
-
-  app.enableCors();
-
-  await app.listen(3001);
-
-  console.log('SERVER RUNNING ON 3001');
-}
-
-bootstrap();
-=======
 import { ValidationPipe } from '@nestjs/common';
 
 import { AppModule } from './app.module';
@@ -46,4 +22,3 @@ async function bootstrap() {
 }
 
 bootstrap();
->>>>>>> f0087804447545af148c4103bb4b34db1b426fdf

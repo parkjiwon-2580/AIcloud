@@ -7,8 +7,8 @@ export class BoardController {
   constructor(private readonly boardService: BoardService) {}
 
   @Get('posts')
-  list(@Query('q') q?: string) {
-    return this.boardService.list(q);
+  list(@Query('targetAgeMonths') targetAgeMonths?: string) {
+    return this.boardService.list(targetAgeMonths);
   }
 
   @Get('posts/:id')
