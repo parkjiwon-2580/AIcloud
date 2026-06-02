@@ -5,10 +5,17 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-  # 만약 SSL(HTTPS)을 적용한다면 아래 주석을 해제하고 인증서 ARN을 넣습니다.
-  # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:xxxxx:certificate/xxxx
+    # 👈 ALB가 80번 포트를 리스닝하도록 명시적으로 지정
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]' 
 spec:
-  ingressClassName: alb # 👈 구형 애노테이션 대신 여기에 명시하는 것이 최신 표준입니다!
+  ingressClassName: alb
+  # 👈 핵심 수정 부분 1: 기존 Fixed 404를 없애고, 리스너의 기본 동작을 frontend 연결로 바꿉니다!
+  defaultBackend:
+    service:
+      name: frontend
+      port:
+        number: 80
+  # 👈 핵심 수정 부분 2: 명시적인 Path 규칙 생성
   rules:
     - http:
         paths:

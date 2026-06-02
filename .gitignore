@@ -30,3 +30,7 @@ eksctl.*
 eksctl_*
 secret.yaml
 *secret.yaml
+package.*
+package-lock.*
+iam_policy.*
+trust-policy.*
