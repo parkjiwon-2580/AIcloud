@@ -13,4 +13,4 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service
-  newTag: e2ebf2e89b0470c25f5b15a4069e23f324adb875
+  newTag: 67b21c38506e7646995b74e5d17f5497deb6d26b
