@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-user-service
+spec:
+  # Deployment의 template.metadata.labels.app과 일치해야 타겟 파드를 찾을 수 있습니다.
+  selector:
+    app: auth-user-service
+  ports:
+    - protocol: TCP
+      port: 8080          # 서비스의 진입 포트 (보통 컨테이너 포트와 맞추거나 80으로 통일해도 무방합니다)
+      targetPort: 8080    # Deployment에 설정된 실제 컨테이너 포트 (containerPort: 8080)
+  type: ClusterIP         # 내부 통신용 IP만 할당 (ALB Ingress가 이 서비스 주소로 토스해 줄 예정)

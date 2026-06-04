@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: questionnaire-service
+spec:
+  selector:
+    app: questionnaire-service
+  ports:
+    - protocol: TCP
+      port: 8080          # 인그레스나 타 서비스가 접근할 포트
+      targetPort: 8080    # 파드 컨테이너 내부 포트 (containerPort와 일치)
+  type: ClusterIP         # 클러스터 내부 통신용 IP 설정
