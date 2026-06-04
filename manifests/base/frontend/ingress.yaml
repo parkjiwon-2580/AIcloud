@@ -14,11 +14,9 @@ spec:
       port:
         number: 80
   rules:
-    - http:
+    - host: ai-care-dev.local  # 👈 여기에 가상 도메인을 명시하여 인프라 설정을 정석으로 맞춥니다.
+      http:
         paths:
-          # ------------------------------------------------
-          # 1. 프론트엔드 연결 (기본 경로)
-          # ------------------------------------------------
           - path: /
             pathType: Prefix
             backend:
@@ -26,18 +24,13 @@ spec:
                 name: frontend
                 port:
                   number: 80
-
-          # ------------------------------------------------
-          # 2. 백엔드 5개 마이크로서비스 라우팅 규칙 추가
-          # ------------------------------------------------
           - path: /api/auth
             pathType: Prefix
             backend:
               service:
-                name: auth-user-service   # 👈 정확한 서비스 이름 매칭
+                name: auth-user-service
                 port:
-                  number: 8080            # 👈 컨테이너 포트 8080과 매칭
-
+                  number: 8080
           - path: /api/board
             pathType: Prefix
             backend:
@@ -45,7 +38,6 @@ spec:
                 name: board-service
                 port:
                   number: 8080
-
           - path: /api/triage
             pathType: Prefix
             backend:
@@ -53,7 +45,6 @@ spec:
                 name: ai-triage-service
                 port:
                   number: 8080
-
           - path: /api/hospital
             pathType: Prefix
             backend:
@@ -61,7 +52,6 @@ spec:
                 name: hospital-recommendation-service
                 port:
                   number: 8080
-
           - path: /api/questionnaire
             pathType: Prefix
             backend:

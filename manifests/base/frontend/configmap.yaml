@@ -11,4 +11,4 @@ data:
   # [필독] 백엔드 API 접속 주소
   # 현재 인프라 목록에는 백엔드 외부 도메인(또는 주소)이 명시되어 있지 않아 가짜 주소를 넣어두었습니다.
   # 인프라 담당자나 백엔드 팀이 "개발서버 API 주소"를 확정해 주면 아래 값을 꼭 그 주소로 변경해 주세요!
-  VITE_API_BASE_URL: "http://k8s-default-frontend-8c600c9539-694620335.ap-northeast-2.elb.amazonaws.com"
+  VITE_API_BASE_URL: ""
