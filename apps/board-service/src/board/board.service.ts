@@ -13,12 +13,18 @@ interface BoardImageRecord {
 interface BoardPostRecord {
   id: string;
   userId: string;
+  category: string;
+  targetAgeMonths: string;
   title: string;
   content: string;
   viewCount: number;
   createdAt: Date;
   updatedAt: Date;
   images: BoardImageRecord[];
+  admin: {
+    nickname: string;
+    role: string;
+  };
   user: {
     nickname: string;
     role: string;
@@ -31,37 +37,15 @@ export class BoardService {
 
   constructor(private readonly requestUser: RequestUserService) {}
 
-<<<<<<< HEAD
-  list(q?: string) {
-    const keyword = q?.toLowerCase();
+  list(targetAgeMonths?: string) {
+    const target = targetAgeMonths?.trim();
     return [...this.posts.values()]
-      .filter((post) => !keyword || post.title.toLowerCase().includes(keyword) || post.content.toLowerCase().includes(keyword))
+      .filter((post) => !target || target === '전체' || post.targetAgeMonths === target || post.targetAgeMonths === '전체')
       .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
   }
 
   async detail(id: string) {
     const post = this.posts.get(id);
-=======
-  list(targetAgeMonths?: string) {
-    const target = targetAgeMonths?.trim();
-    return this.prisma.boardPost.findMany({
-      where: target && target !== '전체'
-        ? {
-            OR: [{ targetAgeMonths: target }, { targetAgeMonths: '전체' }],
-          }
-        : undefined,
-      include: { images: true, admin: { select: { nickname: true, role: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-  }
-
-  async detail(id: string) {
-    const post = await this.prisma.boardPost.update({
-      where: { id },
-      data: { viewCount: { increment: 1 } },
-      include: { images: true, admin: { select: { nickname: true, role: true } } },
-    }).catch(() => null);
->>>>>>> dev
     if (!post) {
       throw new NotFoundException('Post not found');
     }
@@ -77,6 +61,8 @@ export class BoardService {
     const post: BoardPostRecord = {
       id,
       userId: admin.id,
+      category: dto.category,
+      targetAgeMonths: dto.targetAgeMonths,
       title: dto.title,
       content: dto.content,
       viewCount: 0,
@@ -84,24 +70,17 @@ export class BoardService {
       updatedAt: now,
       images: (dto.imageS3Keys ?? []).map((s3Key) => ({
         id: randomUUID(),
-<<<<<<< HEAD
         postId: id,
         s3Key,
         createdAt: now,
       })),
+      admin: {
+        nickname: 'admin',
+        role: admin.role,
+      },
       user: {
         nickname: 'admin',
         role: admin.role,
-=======
-        adminId: admin.id,
-        category: dto.category,
-        targetAgeMonths: dto.targetAgeMonths,
-        title: dto.title,
-        content: dto.content,
-        images: {
-          create: (dto.imageS3Keys ?? []).map((s3Key) => ({ id: randomUUID(), s3Key })),
-        },
->>>>>>> dev
       },
     };
     this.posts.set(id, post);
@@ -110,26 +89,16 @@ export class BoardService {
 
   async update(id: string, dto: BoardPostDto, authorization?: string) {
     this.requestUser.requireAdmin(authorization);
-<<<<<<< HEAD
     const post = this.posts.get(id);
     if (!post) {
       throw new NotFoundException('Post not found');
     }
+    post.category = dto.category;
+    post.targetAgeMonths = dto.targetAgeMonths;
     post.title = dto.title;
     post.content = dto.content;
     post.updatedAt = new Date();
     return post;
-=======
-    return this.prisma.boardPost.update({
-      where: { id },
-      data: {
-        category: dto.category,
-        targetAgeMonths: dto.targetAgeMonths,
-        title: dto.title,
-        content: dto.content,
-      },
-    });
->>>>>>> dev
   }
 
   async remove(id: string, authorization?: string) {

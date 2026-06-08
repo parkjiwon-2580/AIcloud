@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git'
-    targetRevision: practice
+    targetRevision: cicd/0608
     path: manifests/overlays/dev/board-service # 👈 경로 확인!
   destination:
     server: 'https://kubernetes.default.svc'

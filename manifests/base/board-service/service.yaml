@@ -7,6 +7,6 @@ spec:
     app: board-service
   ports:
     - protocol: TCP
-      port: 8080          # 서비스가 노출할 포트
+      port: 80          # 서비스가 노출할 포트
       targetPort: 8080    # 파드 컨테이너 내부의 포트 (containerPort와 일치)
   type: ClusterIP
