@@ -27,3 +27,7 @@ output "onprem_postgres_security_group_id" {
   description = "On-Prem PostgreSQL placeholder security group ID."
   value       = aws_security_group.onprem_postgres.id
 }
+
+output "bastion_security_group_id" {
+  value = aws_security_group.bastion.id
+}

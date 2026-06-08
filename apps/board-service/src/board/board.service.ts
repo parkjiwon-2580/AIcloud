@@ -31,6 +31,7 @@ export class BoardService {
 
   constructor(private readonly requestUser: RequestUserService) {}
 
+<<<<<<< HEAD
   list(q?: string) {
     const keyword = q?.toLowerCase();
     return [...this.posts.values()]
@@ -40,6 +41,27 @@ export class BoardService {
 
   async detail(id: string) {
     const post = this.posts.get(id);
+=======
+  list(targetAgeMonths?: string) {
+    const target = targetAgeMonths?.trim();
+    return this.prisma.boardPost.findMany({
+      where: target && target !== '전체'
+        ? {
+            OR: [{ targetAgeMonths: target }, { targetAgeMonths: '전체' }],
+          }
+        : undefined,
+      include: { images: true, admin: { select: { nickname: true, role: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async detail(id: string) {
+    const post = await this.prisma.boardPost.update({
+      where: { id },
+      data: { viewCount: { increment: 1 } },
+      include: { images: true, admin: { select: { nickname: true, role: true } } },
+    }).catch(() => null);
+>>>>>>> dev
     if (!post) {
       throw new NotFoundException('Post not found');
     }
@@ -62,6 +84,7 @@ export class BoardService {
       updatedAt: now,
       images: (dto.imageS3Keys ?? []).map((s3Key) => ({
         id: randomUUID(),
+<<<<<<< HEAD
         postId: id,
         s3Key,
         createdAt: now,
@@ -69,6 +92,16 @@ export class BoardService {
       user: {
         nickname: 'admin',
         role: admin.role,
+=======
+        adminId: admin.id,
+        category: dto.category,
+        targetAgeMonths: dto.targetAgeMonths,
+        title: dto.title,
+        content: dto.content,
+        images: {
+          create: (dto.imageS3Keys ?? []).map((s3Key) => ({ id: randomUUID(), s3Key })),
+        },
+>>>>>>> dev
       },
     };
     this.posts.set(id, post);
@@ -77,6 +110,7 @@ export class BoardService {
 
   async update(id: string, dto: BoardPostDto, authorization?: string) {
     this.requestUser.requireAdmin(authorization);
+<<<<<<< HEAD
     const post = this.posts.get(id);
     if (!post) {
       throw new NotFoundException('Post not found');
@@ -85,6 +119,17 @@ export class BoardService {
     post.content = dto.content;
     post.updatedAt = new Date();
     return post;
+=======
+    return this.prisma.boardPost.update({
+      where: { id },
+      data: {
+        category: dto.category,
+        targetAgeMonths: dto.targetAgeMonths,
+        title: dto.title,
+        content: dto.content,
+      },
+    });
+>>>>>>> dev
   }
 
   async remove(id: string, authorization?: string) {

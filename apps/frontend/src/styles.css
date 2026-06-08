@@ -643,6 +643,76 @@ button,
   margin-top: 16px;
 }
 
+.info-hero {
+  display: grid;
+  grid-template-columns: 170px 1fr;
+  gap: 32px;
+  align-items: center;
+  margin-bottom: 28px;
+}
+
+.info-hero h1 {
+  font-size: clamp(34px, 5vw, 52px);
+}
+
+.info-hero-visual {
+  display: grid;
+  min-height: 170px;
+  place-items: center;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 30%, #fff7ed 0 16%, transparent 17%),
+    radial-gradient(circle at 70% 32%, rgba(147, 197, 253, 0.5) 0 16%, transparent 17%),
+    linear-gradient(145deg, #dbeafe, #f8fbff);
+  box-shadow: 0 18px 50px rgba(37, 99, 235, 0.12);
+}
+
+.baby-face {
+  display: grid;
+  width: 84px;
+  height: 84px;
+  place-items: center;
+  border: 6px solid #bfdbfe;
+  border-radius: 50%;
+  background: #fff7ed;
+  color: #2563eb;
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.age-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.age-chip {
+  min-width: 120px;
+  border: 1px solid #d4deeb;
+  border-radius: 999px;
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+}
+
+.age-chip.is-active {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.24);
+}
+
+.fallback-note {
+  margin: 0 0 18px;
+  padding: 14px 18px;
+  border: 1px solid #bfdbfe;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #345077;
+  font-weight: 800;
+}
+
 .admin-workspace {
   display: grid;
   grid-template-columns: minmax(280px, 420px) 1fr;
@@ -698,15 +768,153 @@ button,
 }
 
 .info-detail:not(:empty) {
-  padding: 24px;
+  padding: 26px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 20px;
   box-shadow: var(--shadow);
 }
 
+.info-detail strong {
+  font-size: 26px;
+  font-weight: 950;
+}
+
+.info-detail p {
+  color: #334155;
+  line-height: 1.75;
+}
+
+.info-disclaimer {
+  margin-top: 10px;
+  padding: 16px 18px;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #43566f;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
 .info-list {
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  display: grid;
+  gap: 24px;
+}
+
+.info-category-section {
+  display: grid;
+  gap: 12px;
+}
+
+.info-category-section h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #111827;
+  font-size: 22px;
+  font-weight: 950;
+}
+
+.info-category-section h2::before {
+  content: "";
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background:
+    linear-gradient(135deg, #2563eb, #60a5fa);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.22);
+}
+
+.guide-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.guide-card {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  min-height: 184px;
+  padding: 22px 24px;
+  border: 1px solid #d9e4f2;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.07);
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.guide-card:hover,
+.guide-card:focus {
+  border-color: #93c5fd;
+  box-shadow: 0 18px 42px rgba(37, 99, 235, 0.13);
+  transform: translateY(-1px);
+}
+
+.guide-card strong {
+  font-size: 20px;
+  font-weight: 950;
+}
+
+.guide-card p {
+  margin: 0;
+  color: #3f4f65;
+  line-height: 1.6;
+}
+
+.guide-card footer {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.guide-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.age-badge,
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 950;
+  padding: 5px 10px;
+}
+
+.age-badge {
+  background: #2563eb;
+  color: #fff;
+}
+
+.category-badge {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.text-arrow {
+  justify-self: end;
+  min-height: auto;
+  padding: 0;
+  background: transparent;
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 950;
+}
+
+.text-arrow::after {
+  content: "›";
+  padding-left: 8px;
 }
 
 @media (max-width: 860px) {
@@ -744,8 +952,19 @@ button,
   .admin-workspace,
   .todo-grid,
   .search-panel,
-  .birthdate-picker {
+  .birthdate-picker,
+  .info-hero,
+  .guide-card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .info-hero-visual {
+    width: 150px;
+    min-height: 150px;
+  }
+
+  .age-chip {
+    min-width: calc(50% - 6px);
   }
 
   .auth-card {
