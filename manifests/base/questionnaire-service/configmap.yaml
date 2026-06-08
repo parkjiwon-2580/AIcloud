@@ -4,6 +4,7 @@ metadata:
   name: questionnaire-service-config
 data:
   APP_ENV: "dev"
+  PORT: "8080"
   SERVICE_NAME: "questionnaire-service"
   LOG_LEVEL: "INFO"
   TZ: "Asia/Seoul"

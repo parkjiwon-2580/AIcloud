@@ -4,6 +4,7 @@ metadata:
   name: auth-user-service-config
 data:
   APP_ENV: "dev"
+  PORT: "8080"
   SERVICE_NAME: "auth-user-service"
   LOG_LEVEL: "INFO"
   TZ: "Asia/Seoul"
