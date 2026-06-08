@@ -20,4 +20,4 @@ data:
   RDS_USERNAME: "dbadmin"
   # CORS 설정
   CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"
-  ONPREM_API_BASE_URL: "http://dummy-onprem-api.com"
+  ONPREM_API_BASE_URL: "http://172.16.10.10:9000"
