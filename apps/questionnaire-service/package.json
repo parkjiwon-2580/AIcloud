@@ -6,7 +6,7 @@
     "prisma:validate": "prisma validate --schema prisma/schema.prisma"
   },
   "dependencies": {
-    "@aws-sdk/client-sqs": "^3.917.0",
+    "@aws-sdk/client-sqs": "^3.1061.0",
     "@nestjs/common": "^11.1.8",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.8",
