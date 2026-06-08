@@ -13,4 +13,4 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/hospital-recommendation-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/hospital-recommendation-service
-  newTag: 2e9a9663dd26e6ac7fb3afefff2f7ae169d70975
+  newTag: 13a5121f21c3fefec54c3b34d7fa94e9a0afbe29
