@@ -11,8 +11,10 @@ spec:
     path: manifests/overlays/dev/board-service # 👈 경로 확인!
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: default
+    namespace: service
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

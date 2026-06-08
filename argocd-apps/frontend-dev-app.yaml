@@ -12,7 +12,7 @@ spec:
     path: manifests/overlays/dev/frontend # ArgoCD가 읽어들일 Kustomize 경로
   destination:
     server: 'https://kubernetes.default.svc' # 현재 클러스터 내부에 배포
-    namespace: default     # 실제 파드(Pod)가 배포될 네임스페이스
+    namespace: service     # 실제 파드(Pod)가 배포될 네임스페이스
   syncPolicy:
     automated:
       prune: true          # Git에서 리소스가 지워지면 클러스터에서도 자동 삭제
