@@ -14,3 +14,11 @@ images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend-service
   newTag: 7d65a399b383a8ae6ba63673005b240b3fcf5519
+
+patches:
+- path: ingress-backends-patch.yaml
+  target:
+    group: networking.k8s.io
+    version: v1
+    kind: Ingress
+    name: frontend-ingress
