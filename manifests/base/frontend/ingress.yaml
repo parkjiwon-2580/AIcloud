@@ -30,32 +30,32 @@ spec:
               service:
                 name: auth-user-service
                 port:
-                  number: 8080
+                  number: 80
           - path: /api/board
             pathType: Prefix
             backend:
               service:
                 name: board-service
                 port:
-                  number: 8080
+                  number: 80
           - path: /api/triage
             pathType: Prefix
             backend:
               service:
                 name: ai-triage-service
                 port:
-                  number: 8080
+                  number: 80
           - path: /api/hospital
             pathType: Prefix
             backend:
               service:
                 name: hospital-recommendation-service
                 port:
-                  number: 8080
+                  number: 80
           - path: /api/questionnaire
             pathType: Prefix
             backend:
               service:
                 name: questionnaire-service
                 port:
-                  number: 8080
+                  number: 80
