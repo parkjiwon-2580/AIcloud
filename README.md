@@ -276,7 +276,6 @@ On-Prem Sensitive API는 CI만 적용합니다. 배포는 ArgoCD가 아니라 EC
 
 questionnaire-service
 nest new questionnaire-service
-npm install prisma @prisma/client
 
 npm install @nestjs/config
 
@@ -286,4 +285,3 @@ npm install class-transformer
 npm install @aws-sdk/client-sqs
 
 npm install axios
-npx prisma init

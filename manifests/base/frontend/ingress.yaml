@@ -3,20 +3,59 @@ kind: Ingress
 metadata:
   name: frontend-ingress
   annotations:
-    # AWS ALB Ingress Controller를 위한 설정
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing # 인터넷에서 접속 가능하도록 설정
+    alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
-    # 만약 SSL(HTTPS)을 적용한다면 아래 주석을 해제하고 인증서 ARN을 넣습니다.
-    # alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:xxxxx:certificate/xxxx
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]' 
 spec:
+  ingressClassName: alb
+  defaultBackend:
+    service:
+      name: frontend
+      port:
+        number: 80
   rules:
-    - http:
+    - host: ai-care-dev.local  # 👈 여기에 가상 도메인을 명시하여 인프라 설정을 정석으로 맞춥니다.
+      http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: frontend # 위에서 만든 서비스 이름과 일치해야 함
+                name: frontend
                 port:
                   number: 80
+          - path: /api/auth
+            pathType: Prefix
+            backend:
+              service:
+                name: auth-user-service
+                port:
+                  number: 8080
+          - path: /api/board
+            pathType: Prefix
+            backend:
+              service:
+                name: board-service
+                port:
+                  number: 8080
+          - path: /api/triage
+            pathType: Prefix
+            backend:
+              service:
+                name: ai-triage-service
+                port:
+                  number: 8080
+          - path: /api/hospital
+            pathType: Prefix
+            backend:
+              service:
+                name: hospital-recommendation-service
+                port:
+                  number: 8080
+          - path: /api/questionnaire
+            pathType: Prefix
+            backend:
+              service:
+                name: questionnaire-service
+                port:
+                  number: 8080

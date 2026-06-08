@@ -8,9 +8,9 @@ resources:
 # namePrefix: dev-  (필요하다면 주석 해제)
 
 replicas:
-- count: 1
+- count: 2
   name: frontend
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend-service
-  newTag: dd715f8ef9c2e7a7b4ff189f82158dbb5ead60bf
+  newTag: 85e39f648b1285cc49efc6959408600ad365bcaa

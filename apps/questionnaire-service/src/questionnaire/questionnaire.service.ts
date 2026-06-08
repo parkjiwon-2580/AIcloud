@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import { OnpremService } from '../onprem/onprem.service';
-import { PrismaService } from '../prisma/prisma.service';
 import { RequestUserService } from '../request-user.service';
 import { SqsService } from '../sqs/sqs.service';
 import { CreateQuestionnaireDto } from './dto/create-questionnaire.dto';
@@ -26,10 +25,20 @@ const KNOWN_SYMPTOMS = [
   '재채기',
 ];
 
+interface StoredConsultation {
+  id: string;
+  userId: string;
+  childId: string;
+  contentData: Record<string, unknown>;
+  symptomSummary: string;
+  createdAt: Date;
+}
+
 @Injectable()
 export class QuestionnaireService {
+  private readonly consultations = new Map<string, StoredConsultation>();
+
   constructor(
-    private readonly prisma: PrismaService,
     private readonly onprem: OnpremService,
     private readonly sqs: SqsService,
     private readonly requestUser: RequestUserService,
@@ -58,15 +67,15 @@ export class QuestionnaireService {
       },
     };
 
-    const consultation = await this.prisma.consultation.create({
-      data: {
-        id,
-        userId,
-        childId: dto.childId,
-        contentData,
-        symptomSummary,
-      },
-    });
+    const consultation: StoredConsultation = {
+      id,
+      userId,
+      childId: dto.childId,
+      contentData,
+      symptomSummary,
+      createdAt: new Date(),
+    };
+    this.consultations.set(id, consultation);
 
     try {
       await this.onprem.storeConsultation({
@@ -78,7 +87,7 @@ export class QuestionnaireService {
         },
       });
     } catch (error) {
-      await this.prisma.consultation.delete({ where: { id } }).catch(() => undefined);
+      this.consultations.delete(id);
       throw error;
     }
 
@@ -98,29 +107,21 @@ export class QuestionnaireService {
 
   async history(authorization?: string, childId?: string) {
     const user = this.requestUser.requireUser(authorization);
-    const consultations = await this.prisma.consultation.findMany({
-      where: {
-        userId: user.id,
-        ...(childId ? { childId } : {}),
-      },
-      include: {
-        result: true,
-        assets: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const consultations = [...this.consultations.values()]
+      .filter((consultation) => consultation.userId === user.id)
+      .filter((consultation) => !childId || consultation.childId === childId)
+      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
 
     return consultations.map((consultation) => {
-      const resultJson = (consultation.result?.resultJson ?? {}) as Record<string, string>;
       return {
         consultationId: consultation.id,
         childId: consultation.childId,
         createdAt: consultation.createdAt,
-        title: resultJson.summary_title ?? consultation.symptomSummary ?? '문진 기록',
+        title: consultation.symptomSummary ?? '문진 기록',
         symptomSummary: consultation.symptomSummary,
-        riskLevel: resultJson.risk_level ?? 'UNKNOWN',
-        departmentHint: resultJson.department_hint ?? null,
-        pdfS3Key: consultation.assets[0]?.s3Key ?? null,
+        riskLevel: 'UNKNOWN',
+        departmentHint: null,
+        pdfS3Key: null,
       };
     });
   }
@@ -128,23 +129,16 @@ export class QuestionnaireService {
   async result(id: string, authorization?: string) {
     const user = this.requestUser.requireUser(authorization);
     const consultation = await this.findOwnedConsultation(id, user.id);
-    const result = await this.prisma.aiResult.findUnique({
-      where: { consultationId: id },
-    });
-    const asset = await this.prisma.consultationAsset.findFirst({
-      where: { consultationId: id },
-      orderBy: { createdAt: 'desc' },
-    });
     return {
       consultationId: consultation.id,
       childId: consultation.childId,
-      resultJson: result?.resultJson ?? null,
-      pdfS3Key: asset?.s3Key ?? null,
+      resultJson: null,
+      pdfS3Key: null,
     };
   }
 
   private async findOwnedConsultation(id: string, userId: string) {
-    const consultation = await this.prisma.consultation.findUnique({ where: { id } });
+    const consultation = this.consultations.get(id);
     if (!consultation) {
       throw new NotFoundException('Consultation not found');
     }

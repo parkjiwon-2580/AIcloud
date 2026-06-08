@@ -9,7 +9,7 @@ RUN npm ci
 
 COPY . .
 
-RUN DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/aicare npm run build
+RUN npm run build
 
 EXPOSE 3003
 

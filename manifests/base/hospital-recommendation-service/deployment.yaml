@@ -5,7 +5,7 @@ metadata:
   labels:
     app: hospital-recommendation-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: hospital-recommendation-service
@@ -22,5 +22,5 @@ spec:
         envFrom:
         - configMapRef:
             name: hospital-recommendation-service-config
-        # - secretRef:
-        #     name: hospital-recommendation-service-secret
+        - secretRef:
+            name: hospital-recommendation-service-secret
