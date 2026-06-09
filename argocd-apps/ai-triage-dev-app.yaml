@@ -7,12 +7,14 @@ spec:
   project: default
   source:
     repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git' # 🚨 본인 계정으로 변경!
-    targetRevision: dev
+    targetRevision: cicd/0608
     path: manifests/overlays/dev/ai-triage-service # 👈 이 서비스의 Kustomize 경로
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: default
+    namespace: service
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

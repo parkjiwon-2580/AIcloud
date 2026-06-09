@@ -7,12 +7,14 @@ spec:
   project: default
   source:
     repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git'
-    targetRevision: dev
+    targetRevision: cicd/0608
     path: manifests/overlays/dev/questionnaire-service # 👈 경로 확인!
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: default
+    namespace: service
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

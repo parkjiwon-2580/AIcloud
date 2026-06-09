@@ -8,9 +8,9 @@ resources:
 # 개발 환경만의 특별한 설정
 namePrefix: dev-
 replicas:
-- count: 1
+- count: 2
   name: ai-triage-service
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service
-  newTag: f9e794ed4cdf0bfadda2b1a039e67380a97d2c15
+  newTag: 53175767e6d9bd564dd0c799508ec30d2b488049

@@ -22,5 +22,5 @@ spec:
         envFrom:
         - configMapRef:
             name: board-service-config
-        # - secretRef:
-        #     name: board-service-secret
+        - secretRef:
+            name: board-service-secret

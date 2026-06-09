@@ -9,5 +9,5 @@ spec:
   ports:
     - protocol: TCP
       port: 80          # 서비스의 포트 (외부 접속용)
-      targetPort: 8080  # 파드 내부 컨테이너의 포트 (deployment.yaml 설정값)
+      targetPort: 80  # 파드 내부 컨테이너의 포트 (deployment.yaml 설정값)
   type: ClusterIP      # 인그레스를 사용할 것이므로 내부용 IP만 할당

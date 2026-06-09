@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, OnModuleDestroy, UnauthorizedException } from '@nestjs/common';
 import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
-import { PrismaService } from '../prisma/prisma.service';
-import { isDevEnv, readEnv } from '../config';
+import { Pool } from 'pg';
+import { isDevEnv, readEnv, readNumberEnv, requireEnv } from '../config';
 import { OnpremService } from '../onprem/onprem.service';
 import { ChildDto, ChildPatchDto, LoginDto, SignupDto } from './dto/auth.dto';
 
@@ -12,37 +12,45 @@ interface AuthUser {
   role: string;
 }
 
+interface AuthUserRecord extends AuthUser {
+  passwordHash: string;
+}
+
 @Injectable()
-export class AuthService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly onprem: OnpremService,
-  ) {}
+export class AuthService implements OnModuleDestroy {
+  private readonly pool: Pool;
+
+  constructor(private readonly onprem: OnpremService) {
+    this.pool = new Pool(this.databaseConfig());
+  }
+
+  async onModuleDestroy() {
+    await this.pool.end();
+  }
 
   async signup(dto: SignupDto) {
-    if (await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } })) {
-      throw new BadRequestException('Email already exists');
-    }
-    if (await this.prisma.user.findUnique({ where: { nickname: dto.nickname } })) {
-      throw new BadRequestException('Nickname already exists');
+    const email = dto.email.toLowerCase();
+    const user = await this.createUser({
+      id: randomUUID(),
+      email,
+      nickname: dto.nickname,
+      passwordHash: this.hashPassword(dto.password),
+    });
+
+    let initialChildId: string;
+    try {
+      await this.onprem.createProfile(user.id);
+      initialChildId = await this.onprem.createChild({
+        cloudUserId: user.id,
+        name: dto.child.name,
+        birthDate: dto.child.birthDate,
+        gender: dto.child.gender,
+      });
+    } catch (error) {
+      await this.deleteUser(user.id);
+      throw error;
     }
 
-    const user = await this.prisma.user.create({
-      data: {
-        id: randomUUID(),
-        email: dto.email.toLowerCase(),
-        nickname: dto.nickname,
-        passwordHash: this.hashPassword(dto.password),
-        role: 'USER',
-      },
-    });
-    await this.onprem.createProfile(user.id);
-    const initialChildId = await this.onprem.createChild({
-      cloudUserId: user.id,
-      name: dto.child.name,
-      birthDate: dto.child.birthDate,
-      gender: dto.child.gender,
-    });
     const publicUser = this.toPublicUser(user);
     return {
       user: publicUser,
@@ -53,7 +61,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
+    const user = await this.findUserByEmail(dto.email.toLowerCase());
     if (!user || !this.verifyPassword(dto.password, user.passwordHash)) {
       throw new UnauthorizedException('Invalid email or password');
     }
@@ -103,6 +111,67 @@ export class AuthService {
     const salt = randomBytes(16).toString('hex');
     const hash = scryptSync(password, salt, 64).toString('hex');
     return `scrypt:${salt}:${hash}`;
+  }
+
+  private async createUser(input: {
+    id: string;
+    email: string;
+    nickname: string;
+    passwordHash: string;
+  }): Promise<AuthUserRecord> {
+    try {
+      const result = await this.pool.query(
+        `
+          INSERT INTO users (id, email, password_hash, nickname, role)
+          VALUES ($1, $2, $3, $4, 'USER')
+          RETURNING id, email, password_hash, nickname, role
+        `,
+        [input.id, input.email, input.passwordHash, input.nickname],
+      );
+      return this.toUserRecord(result.rows[0]);
+    } catch (error) {
+      if (this.isUniqueViolation(error)) {
+        throw new BadRequestException('Email or nickname already exists');
+      }
+      throw error;
+    }
+  }
+
+  private async findUserByEmail(email: string): Promise<AuthUserRecord | null> {
+    const result = await this.pool.query(
+      `
+        SELECT id, email, password_hash, nickname, role
+        FROM users
+        WHERE email = $1
+        LIMIT 1
+      `,
+      [email],
+    );
+    return result.rows[0] ? this.toUserRecord(result.rows[0]) : null;
+  }
+
+  private async deleteUser(id: string) {
+    await this.pool.query('DELETE FROM users WHERE id = $1', [id]).catch(() => undefined);
+  }
+
+  private toUserRecord(row: {
+    id: string;
+    email: string;
+    password_hash: string;
+    nickname: string;
+    role: string;
+  }): AuthUserRecord {
+    return {
+      id: row.id,
+      email: row.email,
+      passwordHash: row.password_hash,
+      nickname: row.nickname,
+      role: row.role,
+    };
+  }
+
+  private isUniqueViolation(error: unknown): boolean {
+    return typeof error === 'object' && error !== null && 'code' in error && error.code === '23505';
   }
 
   private verifyPassword(password: string, stored: string): boolean {
@@ -165,6 +234,26 @@ export class AuthService {
 
   private encode(value: Record<string, unknown>): string {
     return Buffer.from(JSON.stringify(value)).toString('base64url');
+  }
+
+  private databaseConfig() {
+    const connectionString = readEnv('DATABASE_URL');
+    if (connectionString) {
+      return { connectionString };
+    }
+
+    const password = readEnv('DATABASE_PASSWORD') || readEnv('RDS_PASSWORD');
+    if (!password) {
+      throw new Error('DATABASE_PASSWORD is required');
+    }
+
+    return {
+      host: requireEnv('RDS_HOST'),
+      port: readNumberEnv('RDS_PORT', 5432),
+      database: requireEnv('RDS_DB_NAME'),
+      user: requireEnv('RDS_USERNAME'),
+      password,
+    };
   }
 
   private toPublicUser(user: { id: string; email: string; nickname: string; role: string }): AuthUser {
