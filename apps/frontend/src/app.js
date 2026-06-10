@@ -257,7 +257,10 @@ function formatDate(value) {
 }
 
 function normalizeAgeValue(value) {
-  return value || "전체";
+  const raw = String(value || "전체").trim();
+  const compact = raw.replaceAll("개월", "").replaceAll("~", "-");
+  const matched = AGE_FILTERS.find((item) => item.value === raw || item.label === raw || item.value === compact);
+  return matched?.value || raw;
 }
 
 function ageLabel(value) {
@@ -266,20 +269,30 @@ function ageLabel(value) {
 }
 
 function normalizeInfoPost(post) {
+  const targetAgeMonths = normalizeAgeValue(post.targetAgeMonths || post.target_age_months || "전체");
   return {
     ...post,
     admin: post.admin || post.user,
     category: post.category || "공지",
-    targetAgeMonths: post.targetAgeMonths || post.target_age_months || "전체",
+    targetAgeMonths,
     viewCount: post.viewCount ?? post.view_count ?? 0,
     createdAt: post.createdAt || post.created_at,
   };
 }
 
 function samplePostsForAge(targetAgeMonths = "전체") {
+  const target = normalizeAgeValue(targetAgeMonths);
   return SAMPLE_INFO_POSTS.filter(
-    (post) => targetAgeMonths === "전체" || post.targetAgeMonths === "전체" || post.targetAgeMonths === targetAgeMonths,
+    (post) => target === "전체" || normalizeAgeValue(post.targetAgeMonths) === "전체" || normalizeAgeValue(post.targetAgeMonths) === target,
   );
+}
+
+function mergeInfoPosts(apiPosts, samplePosts) {
+  const apiPostKeys = new Set(apiPosts.map((post) => `${post.category}:${post.targetAgeMonths}:${post.title}`));
+  const uniqueSamples = samplePosts.filter(
+    (post) => !apiPostKeys.has(`${post.category}:${normalizeAgeValue(post.targetAgeMonths)}:${post.title}`),
+  );
+  return [...apiPosts, ...uniqueSamples];
 }
 
 function routeName() {
@@ -777,20 +790,21 @@ function renderAgeFilter() {
 }
 
 async function loadInfo(targetAgeMonths = "전체") {
+  const normalizedTargetAgeMonths = normalizeAgeValue(targetAgeMonths);
+  let remotePosts = [];
   let posts = [];
+  let fallbackMessage = "";
   try {
-    posts = (await boardApi.posts({ targetAgeMonths })).map(normalizeInfoPost);
+    remotePosts = (await boardApi.posts({ targetAgeMonths: normalizedTargetAgeMonths })).map(normalizeInfoPost);
   } catch (error) {
-    posts = samplePostsForAge(targetAgeMonths);
-    const fallback = document.getElementById("infoFallbackNotice");
-    if (fallback) {
-      fallback.textContent = `서비스 연결이 원활하지 않아 로컬 샘플 콘텐츠를 보여줍니다. ${friendlyApiError(error, "board")}`;
-      fallback.hidden = false;
-    }
+    fallbackMessage = `서비스 연결이 원활하지 않아 로컬 샘플 콘텐츠를 보여줍니다. ${friendlyApiError(error, "board")}`;
   }
 
-  if (!posts.length) {
-    posts = samplePostsForAge(targetAgeMonths);
+  const samplePosts = samplePostsForAge(normalizedTargetAgeMonths).map(normalizeInfoPost);
+  posts = mergeInfoPosts(remotePosts, samplePosts);
+
+  if (!remotePosts.length && !fallbackMessage && samplePosts.length) {
+    fallbackMessage = "등록된 콘텐츠가 없어 로컬 샘플 콘텐츠를 보여줍니다.";
   }
 
   if (!posts.length) {
@@ -799,7 +813,8 @@ async function loadInfo(targetAgeMonths = "전체") {
   }
 
   const fallback = document.getElementById("infoFallbackNotice");
-  if (fallback && posts.some((post) => String(post.id).startsWith("sample-"))) {
+  if (fallback && fallbackMessage) {
+    fallback.textContent = fallbackMessage;
     fallback.hidden = false;
   } else if (fallback) {
     fallback.hidden = true;

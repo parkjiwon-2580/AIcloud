@@ -3,8 +3,20 @@ export function readEnv(name: string, fallback = ''): string {
 }
 
 export function readNumberEnv(name: string, fallback: number): number {
-  const value = Number(process.env[name]);
-  return Number.isFinite(value) ? value : fallback;
+  const value = process.env[name];
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+export function requireEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`${name} is required`);
+  }
+  return value;
 }
 
 export function isDevEnv(): boolean {

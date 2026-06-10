@@ -48,13 +48,13 @@ class ConsultationRequest(BaseModel):
 def get_or_create_profile(db: Session, cloud_user_id: UUID) -> SensitiveProfile:
     existing = (
         db.query(SensitiveProfile)
-        .filter(SensitiveProfile.cloud_user_id == str(cloud_user_id))
+        .filter(SensitiveProfile.cloud_user_id == cloud_user_id)
         .first()
     )
     if existing:
         return existing
 
-    profile = SensitiveProfile(id=str(uuid4()), cloud_user_id=str(cloud_user_id))
+    profile = SensitiveProfile(id=uuid4(), cloud_user_id=cloud_user_id)
     db.add(profile)
     db.commit()
     db.refresh(profile)
@@ -82,8 +82,8 @@ def create_profile(request: ProfileRequest, db: Session = Depends(get_db)):
 def create_child(request: ChildRequest, db: Session = Depends(get_db)):
     profile = get_or_create_profile(db, request.cloud_user_id)
     child = SensitiveChild(
-        id=str(uuid4()),
-        sensitive_profiles_id=profile.id,
+        id=uuid4(),
+        profiles_id=profile.id,
         name_enc=encrypt_text(request.name),
         birth_date_enc=encrypt_text(request.birth_date),
         gender_enc=encrypt_text(request.gender),
@@ -102,7 +102,7 @@ def list_children(
 ):
     profile = (
         db.query(SensitiveProfile)
-        .filter(SensitiveProfile.cloud_user_id == str(cloud_user_id))
+        .filter(SensitiveProfile.cloud_user_id == cloud_user_id)
         .first()
     )
     if not profile:
@@ -110,7 +110,7 @@ def list_children(
 
     children = (
         db.query(SensitiveChild)
-        .filter(SensitiveChild.sensitive_profiles_id == profile.id)
+        .filter(SensitiveChild.profiles_id == profile.id)
         .order_by(SensitiveChild.created_at.desc())
         .all()
     )
@@ -133,7 +133,7 @@ def update_child(
     request: ChildPatchRequest,
     db: Session = Depends(get_db),
 ):
-    child = db.query(SensitiveChild).filter(SensitiveChild.id == str(child_id)).first()
+    child = db.query(SensitiveChild).filter(SensitiveChild.id == child_id).first()
     if not child:
         raise HTTPException(status_code=404, detail="Child not found")
 
@@ -154,9 +154,9 @@ def update_child(
 @app.post("/internal/sensitive/consultation")
 def create_consultation(request: ConsultationRequest, db: Session = Depends(get_db)):
     consultation = SensitiveConsultation(
-        id=str(uuid4()),
-        consultation_id=str(request.consultation_id),
-        cloud_user_id=str(request.cloud_user_id),
+        id=uuid4(),
+        consultation_id=request.consultation_id,
+        cloud_user_id=request.cloud_user_id,
         raw_enc=encrypt_json(request.raw_payload),
     )
     db.add(consultation)

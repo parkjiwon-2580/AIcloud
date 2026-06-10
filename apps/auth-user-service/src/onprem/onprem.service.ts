@@ -1,5 +1,5 @@
 import { BadGatewayException, Injectable } from '@nestjs/common';
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { readNumberEnv, requireEnv } from '../config';
 
 @Injectable()
@@ -9,7 +9,7 @@ export class OnpremService {
   constructor() {
     this.client = axios.create({
       baseURL: requireEnv('ONPREM_API_BASE_URL'),
-      timeout: readNumberEnv('ONPREM_API_TIMEOUT_MS', 3000),
+      timeout: readNumberEnv('ONPREM_API_TIMEOUT_MS', 10000),
     });
   }
 
@@ -38,10 +38,11 @@ export class OnpremService {
   }
 
   async listChildren(cloudUserId: string) {
-    const response = await this.client.get('/internal/sensitive/children', {
-      params: { cloud_user_id: cloudUserId },
-    });
-    return response.data;
+    return this.request('/internal/sensitive/children', () =>
+      this.client.get('/internal/sensitive/children', {
+        params: { cloud_user_id: cloudUserId },
+      }),
+    );
   }
 
   async updateChild(childId: string, input: {
@@ -50,18 +51,24 @@ export class OnpremService {
     gender?: string;
     detailJson?: Record<string, unknown>;
   }) {
-    const response = await this.client.patch(`/internal/sensitive/children/${childId}`, {
-      name: input.name,
-      birth_date: input.birthDate,
-      gender: input.gender,
-      detail_json: input.detailJson,
-    });
-    return response.data;
+    const path = `/internal/sensitive/children/${childId}`;
+    return this.request(path, () =>
+      this.client.patch(path, {
+        name: input.name,
+        birth_date: input.birthDate,
+        gender: input.gender,
+        detail_json: input.detailJson,
+      }),
+    );
   }
 
   private async post(path: string, body: Record<string, unknown>) {
+    return this.request(path, () => this.client.post(path, body));
+  }
+
+  private async request<T>(path: string, operation: () => Promise<AxiosResponse<T>>): Promise<T> {
     try {
-      const response = await this.client.post(path, body);
+      const response = await operation();
       return response.data;
     } catch {
       throw new BadGatewayException(`onprem-sensitive-api request failed: ${path}`);
