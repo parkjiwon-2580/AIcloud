@@ -1,0 +1,54 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  nickname     String   @unique
+  role         String   @default("USER")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  boardPosts BoardPost[]
+
+  @@map("users")
+}
+
+model BoardPost {
+  id              String   @id @db.Uuid
+  adminId         String   @map("admin_id") @db.Uuid
+  category        String   @db.VarChar(50)
+  targetAgeMonths String   @map("target_age_months") @db.VarChar(20)
+  title           String
+  content         String
+  viewCount       Int      @default(0) @map("view_count")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  admin  User         @relation(fields: [adminId], references: [id])
+  images BoardImage[]
+
+  @@index([adminId])
+  @@index([targetAgeMonths])
+  @@index([category])
+  @@map("board_posts")
+}
+
+model BoardImage {
+  id        String   @id @db.Uuid
+  postId    String   @map("post_id") @db.Uuid
+  s3Key     String   @map("s3_key")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  post BoardPost @relation(fields: [postId], references: [id])
+
+  @@index([postId])
+  @@map("board_images")
+}

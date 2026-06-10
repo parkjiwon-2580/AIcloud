@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  nickname     String   @unique
+  role         String   @default("USER")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  consultations Consultation[]
+
+  @@map("users")
+}
+
+model Consultation {
+  id             String   @id @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  childId        String   @map("child_id") @db.Uuid
+  contentData    Json     @map("content_data")
+  symptomSummary String?  @map("symptom_summary")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user     User                @relation(fields: [userId], references: [id])
+  result   AiResult?
+  assets   ConsultationAsset[]
+
+  @@index([userId])
+  @@index([childId])
+  @@map("consultations")
+}
+
+model AiResult {
+  id             String   @id @db.Uuid
+  consultationId String   @unique @map("consultation_id") @db.Uuid
+  resultJson     Json     @map("result_json")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  consultation Consultation @relation(fields: [consultationId], references: [id])
+
+  @@map("ai_results")
+}
+
+model ConsultationAsset {
+  id             String   @id @db.Uuid
+  consultationId String   @map("consultation_id") @db.Uuid
+  s3Key          String   @map("s3_key")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  consultation Consultation @relation(fields: [consultationId], references: [id])
+
+  @@index([consultationId])
+  @@map("consultation_assets")
+}

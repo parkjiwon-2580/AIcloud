@@ -8,6 +8,7 @@ locals {
     strongswan      = aws_security_group.strongswan.id
     fastapi         = aws_security_group.fastapi.id
     onprem_postgres = aws_security_group.onprem_postgres.id
+    ssm_endpoint    = aws_security_group.ssm_endpoint.id
   }
 }
 
@@ -68,6 +69,16 @@ resource "aws_security_group" "onprem_postgres" {
 
   tags = merge(var.tags, {
     Name = "${local.name_prefix}-onprem-postgres-sg"
+  })
+}
+
+resource "aws_security_group" "ssm_endpoint" {
+  name        = "ssm-endpoint-sg"
+  description = "endpoint"
+  vpc_id      = var.onprem_vpc_id
+
+  tags = merge(var.tags, {
+    Name = "ssm-endpoint-sg"
   })
 }
 
@@ -150,6 +161,33 @@ resource "aws_vpc_security_group_ingress_rule" "strongswan_udp_4500" {
   tags = var.tags
 }
 
+resource "aws_vpc_security_group_ingress_rule" "strongswan_onprem_return_traffic" {
+  security_group_id = aws_security_group.strongswan.id
+
+  cidr_ipv4 = "172.16.0.0/16"
+
+  ip_protocol = "-1"
+
+  description = "allow onprem return traffic through strongSwan for VPN forwarding"
+
+  tags = var.tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "ssm_endpoint_https" {
+  security_group_id = aws_security_group.ssm_endpoint.id
+
+  cidr_ipv4 = "172.16.0.0/16"
+
+  from_port = 443
+  to_port   = 443
+
+  ip_protocol = "tcp"
+
+  description = "HTTPS from OnPrem VPC"
+
+  tags = var.tags
+}
+
 resource "aws_vpc_security_group_ingress_rule" "fastapi_from_service_vpc" {
   security_group_id = aws_security_group.fastapi.id
   cidr_ipv4         = var.service_vpc_cidr_block
@@ -185,17 +223,6 @@ resource "aws_vpc_security_group_egress_rule" "all" {
 resource "aws_security_group" "bastion" {
   name_prefix = "${local.name_prefix}-bastion-sg"
   vpc_id      = var.service_vpc_id
-
-  ingress {
-    description = "SSH"
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-
-    cidr_blocks = ["121.134.211.97/32",
-    "122.35.216.132/32"]
-
-  }
 
   egress {
     from_port   = 0

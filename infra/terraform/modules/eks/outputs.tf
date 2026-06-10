@@ -43,6 +43,7 @@ output "eks_node_role_arn" {
   value       = aws_iam_role.node.arn
 }
 
+
 output "eks_cluster_role_arn" {
   description = "EKS cluster IAM role ARN."
   value       = aws_iam_role.cluster.arn

@@ -22,13 +22,13 @@ resource "aws_db_instance" "this" {
   max_allocated_storage = var.max_allocated_storage
   storage_encrypted     = true
 
-  db_name  = var.db_name
-  username = var.username
-
   # AWS RDS stores only the application database. Raw sensitive personal data
   # should not be stored here unless the application layer has the required
   # privacy controls. The master password is managed by AWS Secrets Manager.
-  manage_master_user_password = true
+  db_name  = var.db_name
+  username = var.username
+  
+  password = var.db_password
 
   db_subnet_group_name   = aws_db_subnet_group.this.name
   vpc_security_group_ids = [var.rds_security_group_id]

@@ -17,13 +17,13 @@ variable "ami_id" {
 variable "instance_type" {
   description = "EC2 instance type for On-Prem placeholders."
   type        = string
-  default     = "t3.micro"
+  default     = "t3.medium"
 }
 
 variable "strongswan_instance_type" {
   description = "EC2 instance type for strongSwan."
   type        = string
-  default     = "t3.micro"
+  default     = "t3.small"
 }
 
 variable "onprem_ec2_key_name" {

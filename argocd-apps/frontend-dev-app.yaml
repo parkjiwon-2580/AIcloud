@@ -8,11 +8,11 @@ spec:
   source:
     # 🚨 주의: 본인의 실제 GitHub 레포지토리 주소로 꼭 변경해주세요!
     repoURL: 'https://github.com/parkjiwon-2580/AIcloud.git' 
-    targetRevision: cicd/0608   # 감시할 기준 브랜치 (지금은 CI 브랜치지만, 보통 dev을 봅니다)
+    targetRevision: dev   # 감시할 기준 브랜치 (지금은 CI 브랜치지만, 보통 dev을 봅니다)
     path: manifests/overlays/dev/frontend # ArgoCD가 읽어들일 Kustomize 경로
   destination:
     server: 'https://kubernetes.default.svc' # 현재 클러스터 내부에 배포
-    namespace: service     # 실제 파드(Pod)가 배포될 네임스페이스
+    namespace: default     # 실제 파드(Pod)가 배포될 네임스페이스
   syncPolicy:
     automated:
       prune: true          # Git에서 리소스가 지워지면 클러스터에서도 자동 삭제
