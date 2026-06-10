@@ -10,14 +10,18 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.13"
+    }
+    kubernetes = {
+    source  = "hashicorp/kubernetes"
+    version = "~> 2.30"
+    }
+    null = {
+    source  = "hashicorp/null"
+    version = "~> 3.2"
   }
-}
-
-provider "aws" {
-  region = var.aws_region
-
-  default_tags {
-    tags = local.common_tags
   }
 }
 
@@ -71,6 +75,7 @@ module "onprem_network" {
   onprem_private_route_table_id = var.onprem_private_route_table_id
   expected_onprem_vpc_cidr      = var.expected_onprem_vpc_cidr
   tags                          = local.common_tags
+  ssm_endpoint_security_group_id = module.security.ssm_endpoint_security_group_id
 }
 
 module "security" {
@@ -141,7 +146,8 @@ module "vpn" {
 
 module "rds" {
   source = "../../modules/rds"
-
+  
+  db_password = var.db_password
   project_name            = var.project_name
   environment             = var.environment
   private_data_subnet_ids = module.existing_network.private_data_subnet_ids
@@ -161,6 +167,8 @@ module "rds" {
 
 module "eks" {
   source = "../../modules/eks"
+
+  authentication_mode = "API_AND_CONFIG_MAP"
 
   project_name                    = var.project_name
   environment                     = var.environment
@@ -182,6 +190,82 @@ module "eks" {
     module.service_nat_gateway
   ]
 }
+
+resource "aws_vpc_security_group_ingress_rule" "rds_from_eks_cluster" {
+  security_group_id            = module.security.rds_security_group_id
+  referenced_security_group_id = module.eks.eks_cluster_security_group_id
+  from_port                    = var.postgres_port
+  to_port                      = var.postgres_port
+  ip_protocol                  = "tcp"
+  description                  = "PostgreSQL from EKS managed node group cluster security group."
+
+  tags = local.common_tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "rds_from_bastion" {
+  security_group_id            = module.security.rds_security_group_id
+  referenced_security_group_id = module.security.bastion_security_group_id
+
+  from_port   = var.postgres_port
+  to_port     = var.postgres_port
+  ip_protocol = "tcp"
+
+  description = "PostgreSQL from Bastion"
+
+  tags = local.common_tags
+}
+
+module "app_services" {
+  source = "../../modules/app-services"
+
+  project_name = var.project_name
+  environment                       = var.environment
+  app_ecr_repository_names          = var.app_ecr_repository_names
+  ecr_force_delete                  = var.ecr_force_delete
+  reports_bucket_name               = var.reports_bucket_name
+  reports_s3_prefix                 = var.reports_s3_prefix
+  reports_bucket_force_destroy      = var.reports_bucket_force_destroy
+  cloudwatch_log_retention_days     = var.cloudwatch_log_retention_days
+  eks_oidc_provider_arn             = module.eks.eks_oidc_provider_arn
+  eks_oidc_issuer_url               = module.eks.eks_oidc_issuer_url
+  backend_service_account_namespace = var.backend_service_account_namespace
+  backend_service_account_name      = var.backend_service_account_name
+  create_ai_processor_lambda        = var.create_ai_processor_lambda
+  ai_processor_image_uri            = var.ai_processor_image_uri
+  tags                              = local.common_tags
+}
+
+module "cicd" {
+  count  = var.enable_cicd ? 1 : 0
+  source = "../../modules/cicd"
+
+  project_name                  = var.project_name
+  environment                   = var.environment
+  create_github_oidc_provider   = var.create_github_oidc_provider
+  github_oidc_provider_arn      = var.github_oidc_provider_arn
+  github_repository             = var.github_repository
+  github_branch                 = var.github_branch
+  create_github_ecr_push_role   = var.create_github_ecr_push_role
+  create_github_eks_deploy_role = var.create_github_eks_deploy_role
+  create_terraform_apply_role   = var.create_terraform_apply_role
+  tags                          = local.common_tags
+}
+
+module "bastion" {
+  source = "../../modules/bastion"
+
+  project_name = var.project_name
+  environment  = var.environment
+
+  public_subnet_id = module.existing_network.public_subnet_ids[0]
+
+  bastion_security_group_id = module.security.bastion_security_group_id
+
+  key_name = var.bastion_key_name
+
+  tags = local.common_tags
+}
+
 
 # jiyun
 resource "aws_eks_access_entry" "jiyun" {
@@ -255,77 +339,16 @@ resource "aws_eks_access_policy_association" "hyeongwook_admin" {
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "rds_from_eks_cluster" {
-  security_group_id            = module.security.rds_security_group_id
-  referenced_security_group_id = module.eks.eks_cluster_security_group_id
-  from_port                    = var.postgres_port
-  to_port                      = var.postgres_port
-  ip_protocol                  = "tcp"
-  description                  = "PostgreSQL from EKS managed node group cluster security group."
-
-  tags = local.common_tags
+module "helm" {
+  source = "../../modules/helm"
+  depends_on = [module.eks]
 }
 
-resource "aws_vpc_security_group_ingress_rule" "rds_from_bastion" {
-  security_group_id            = module.security.rds_security_group_id
-  referenced_security_group_id = module.security.bastion_security_group_id
+module "k8s" {
+  source = "../../modules/k8s"
 
-  from_port  = var.postgres_port
-  to_port    = var.postgres_port
-  ip_protocol = "tcp"
-
-  description = "PostgreSQL from Bastion"
-
-  tags = local.common_tags
-}
-
-module "app_services" {
-  source = "../../modules/app-services"
-
-  project_name                      = var.project_name
-  environment                       = var.environment
-  app_ecr_repository_names          = var.app_ecr_repository_names
-  ecr_force_delete                  = var.ecr_force_delete
-  reports_bucket_name               = var.reports_bucket_name
-  reports_s3_prefix                 = var.reports_s3_prefix
-  reports_bucket_force_destroy      = var.reports_bucket_force_destroy
-  cloudwatch_log_retention_days     = var.cloudwatch_log_retention_days
-  eks_oidc_provider_arn             = module.eks.eks_oidc_provider_arn
-  eks_oidc_issuer_url               = module.eks.eks_oidc_issuer_url
-  backend_service_account_namespace = var.backend_service_account_namespace
-  backend_service_account_name      = var.backend_service_account_name
-  create_ai_processor_lambda        = var.create_ai_processor_lambda
-  ai_processor_image_uri            = var.ai_processor_image_uri
-  tags                              = local.common_tags
-}
-
-module "cicd" {
-  count  = var.enable_cicd ? 1 : 0
-  source = "../../modules/cicd"
-
-  project_name                  = var.project_name
-  environment                   = var.environment
-  create_github_oidc_provider   = var.create_github_oidc_provider
-  github_oidc_provider_arn      = var.github_oidc_provider_arn
-  github_repository             = var.github_repository
-  github_branch                 = var.github_branch
-  create_github_ecr_push_role   = var.create_github_ecr_push_role
-  create_github_eks_deploy_role = var.create_github_eks_deploy_role
-  create_terraform_apply_role   = var.create_terraform_apply_role
-  tags                          = local.common_tags
-}
-
-module "bastion" {
-  source = "../../modules/bastion"
-
-  project_name = var.project_name
-  environment  = var.environment
-
-  public_subnet_id = module.existing_network.public_subnet_ids[0]
-
-  bastion_security_group_id = module.security.bastion_security_group_id
-
-  key_name = var.bastion_key_name
-
-  tags = local.common_tags
+  depends_on = [
+    module.eks,
+    module.helm
+  ]
 }

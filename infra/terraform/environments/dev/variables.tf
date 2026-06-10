@@ -150,13 +150,13 @@ variable "onprem_ec2_key_name" {
 variable "onprem_instance_type" {
   description = "On-Prem placeholder EC2 instance type."
   type        = string
-  default     = "t3.micro"
+  default     = "t3.medium"
 }
 
 variable "strongswan_instance_type" {
   description = "strongSwan EC2 instance type."
   type        = string
-  default     = "t3.micro"
+  default     = "t3.small"
 }
 
 variable "onprem_root_volume_size" {
@@ -225,6 +225,11 @@ variable "rds_db_name" {
   default     = "aicare"
 }
 
+variable "db_password" {
+  type      = string
+  sensitive = true
+}
+
 variable "rds_username" {
   description = "RDS master username. Password is managed by AWS Secrets Manager."
   type        = string
@@ -281,7 +286,7 @@ variable "cluster_public_access_cidrs" {
 variable "eks_node_instance_types" {
   description = "EKS node instance types."
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t3.large"]
 }
 
 variable "eks_node_disk_size" {
