@@ -13,7 +13,7 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend-service
-  newTag: 2f773a5743292a809beee2889cf79ed185efa5f5
+  newTag: 766c93f108f8a5fae2230be514e31e90487b69e8
 
 patches:
 - path: ingress-backends-patch.yaml
