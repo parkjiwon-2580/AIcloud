@@ -31,3 +31,7 @@ output "onprem_postgres_security_group_id" {
 output "bastion_security_group_id" {
   value = aws_security_group.bastion.id
 }
+
+output "ssm_endpoint_security_group_id" {
+  value = aws_security_group.ssm_endpoint.id
+}

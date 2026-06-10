@@ -47,6 +47,10 @@ resource "aws_eks_cluster" "this" {
     public_access_cidrs     = var.cluster_public_access_cidrs
   }
 
+  access_config {
+  authentication_mode = var.authentication_mode
+}
+
   enabled_cluster_log_types = ["api", "audit", "authenticator"]
 
   depends_on = [aws_iam_role_policy_attachment.cluster_policy]

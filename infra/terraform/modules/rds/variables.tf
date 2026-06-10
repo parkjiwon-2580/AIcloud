@@ -48,6 +48,11 @@ variable "db_name" {
   default     = "aicare"
 }
 
+variable "db_password" {
+  type      = string
+  sensitive = true
+}
+
 variable "username" {
   description = "RDS master username. Password is managed by AWS Secrets Manager."
   type        = string
