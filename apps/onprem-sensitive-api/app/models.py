@@ -1,7 +1,6 @@
 from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
-from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import Uuid
 from sqlalchemy.sql import func
@@ -60,17 +59,14 @@ class SensitiveChild(Base):
 
     birth_date_enc = Column(
         Text,
-        nullable=False,
     )
 
     gender_enc = Column(
         Text,
-        nullable=False,
     )
 
     detail_json_enc = Column(
         Text,
-        nullable=False,
     )
 
     created_at = Column(
