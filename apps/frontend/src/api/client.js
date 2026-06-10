@@ -10,11 +10,11 @@ const STORAGE_KEYS = {
 };
 
 const DEFAULT_BASE_URLS = {
-  auth: "http://localhost:3001",
-  questionnaire: "http://localhost:3002",
-  ai: "http://localhost:3003",
-  board: "http://localhost:3004",
-  hospital: "http://localhost:3005",
+  auth: "",
+  questionnaire: "",
+  ai: "",
+  board: "",
+  hospital: "",
 };
 
 const ENV_KEYS = {

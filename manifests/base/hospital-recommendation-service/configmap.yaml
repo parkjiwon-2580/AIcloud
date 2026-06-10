@@ -4,6 +4,7 @@ metadata:
   name: hospital-recommendation-service-config
 data:
   APP_ENV: "dev"
+  PORT: "8080"
   SERVICE_NAME: "hospital-recommendation-service"
   LOG_LEVEL: "INFO"
   TZ: "Asia/Seoul"

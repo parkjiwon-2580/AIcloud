@@ -1,0 +1,60 @@
+- op: replace
+  path: /spec/rules
+  value:
+    - http:
+        paths:
+          - path: /auth
+            pathType: Prefix
+            backend:
+              service:
+                name: dev-auth-user-service
+                port:
+                  number: 80
+
+          - path: /me
+            pathType: Prefix
+            backend:
+              service:
+                name: dev-auth-user-service
+                port:
+                  number: 80
+
+          - path: /info
+            pathType: Prefix
+            backend:
+              service:
+                name: dev-board-service
+                port:
+                  number: 80
+
+          - path: /ai
+            pathType: Prefix
+            backend:
+              service:
+                name: dev-ai-triage-service
+                port:
+                  number: 80
+
+          - path: /hospitals
+            pathType: Prefix
+            backend:
+              service:
+                name: dev-hospital-recommendation-service
+                port:
+                  number: 80
+
+          - path: /questionnaires
+            pathType: Prefix
+            backend:
+              service:
+                name: dev-questionnaire-service
+                port:
+                  number: 80
+
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80

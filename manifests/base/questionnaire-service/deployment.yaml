@@ -5,7 +5,7 @@ metadata:
   labels:
     app: questionnaire-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: questionnaire-service
@@ -22,5 +22,5 @@ spec:
         envFrom:
         - configMapRef:
             name: questionnaire-service-config
-        # - secretRef:
-        #     name: questionnaire-service-secret
+        - secretRef:
+            name: questionnaire-service-secret

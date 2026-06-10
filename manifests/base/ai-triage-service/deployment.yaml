@@ -5,7 +5,7 @@ metadata:
   labels:
     app: ai-triage-service
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app: ai-triage-service
@@ -22,5 +22,5 @@ spec:
         envFrom:
         - configMapRef:
             name: ai-triage-service-config
-        # - secretRef:
-        #     name: ai-triage-service-secret
+        - secretRef:
+            name: ai-triage-service-secret

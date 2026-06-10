@@ -8,9 +8,9 @@ resources:
 # 개발 환경만의 특별한 설정
 namePrefix: dev-
 replicas:
-- count: 1
+- count: 2
   name: hospital-recommendation-service
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/hospital-recommendation-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/hospital-recommendation-service
-  newTag: cf825cc4763c6302632e56472f24db479b4569f4
+  newTag: 45d27c4512f04937c7803b0e2aec75faea213a7d

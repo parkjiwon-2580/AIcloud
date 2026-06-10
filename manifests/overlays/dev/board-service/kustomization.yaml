@@ -8,9 +8,9 @@ resources:
 # 개발 환경만의 특별한 설정
 namePrefix: dev-
 replicas:
-- count: 1
+- count: 2
   name: board-service
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service
-  newTag: cf825cc4763c6302632e56472f24db479b4569f4
+  newTag: a73d127970ea4bca344106019b02e02a965b8794

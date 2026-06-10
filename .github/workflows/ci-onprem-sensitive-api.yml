@@ -58,8 +58,8 @@ jobs:
         
         # 고유 해시 태그(버전 관리용)와 latest 태그(배포 편의용)를 모두 빌드합니다.
         docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
-        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+        docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:onprem-dev .
         
         # ECR 저장소로 두 태그를 모두 푸시합니다.
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:onprem-dev
