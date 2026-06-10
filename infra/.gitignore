@@ -15,3 +15,4 @@ tfvars.env.local
 *.crt
 tfplan
 *.tfplan
+k9s/

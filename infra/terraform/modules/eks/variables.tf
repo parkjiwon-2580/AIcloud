@@ -49,7 +49,7 @@ variable "cluster_public_access_cidrs" {
 variable "node_instance_types" {
   description = "Managed node group instance types."
   type        = list(string)
-  default     = ["t3.medium"]
+  default     = ["t3.large"]
 }
 
 variable "node_disk_size" {
@@ -86,4 +86,8 @@ variable "tags" {
   description = "Common tags."
   type        = map(string)
   default     = {}
+}
+
+variable "authentication_mode" {
+  type = string
 }

@@ -26,3 +26,5 @@ kubeconfig
 __pycache__/
 .venv/
 venv/
+k9s/
+*.exe

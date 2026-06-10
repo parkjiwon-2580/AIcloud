@@ -32,3 +32,7 @@ output "onprem_private_route_table_id" {
   description = "Existing On-Prem private route table ID."
   value       = data.aws_route_table.private.id
 }
+
+variable "ssm_endpoint_security_group_id" {
+  type = string
+}
