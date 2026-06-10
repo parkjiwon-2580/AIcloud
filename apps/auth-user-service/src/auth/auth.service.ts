@@ -1,6 +1,6 @@
 import { BadRequestException, Injectable, OnModuleDestroy, UnauthorizedException } from '@nestjs/common';
 import { createHmac, randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'crypto';
-import { Pool } from 'pg';
+import { Pool, type PoolConfig } from 'pg';
 import { isDevEnv, readEnv, readNumberEnv, requireEnv } from '../config';
 import { OnpremService } from '../onprem/onprem.service';
 import { ChildDto, ChildPatchDto, LoginDto, SignupDto } from './dto/auth.dto';
@@ -236,10 +236,11 @@ export class AuthService implements OnModuleDestroy {
     return Buffer.from(JSON.stringify(value)).toString('base64url');
   }
 
-  private databaseConfig() {
+  private databaseConfig(): PoolConfig {
+    const ssl = this.databaseSslConfig();
     const connectionString = readEnv('DATABASE_URL');
     if (connectionString) {
-      return { connectionString };
+      return { connectionString, ssl };
     }
 
     const password = readEnv('DATABASE_PASSWORD') || readEnv('RDS_PASSWORD');
@@ -253,6 +254,17 @@ export class AuthService implements OnModuleDestroy {
       database: requireEnv('RDS_DB_NAME'),
       user: requireEnv('RDS_USERNAME'),
       password,
+      ssl,
+    };
+  }
+
+  private databaseSslConfig(): PoolConfig['ssl'] {
+    const enabled = readEnv('RDS_SSL', 'false').toLowerCase();
+    if (!['true', '1', 'require'].includes(enabled)) {
+      return false;
+    }
+    return {
+      rejectUnauthorized: readEnv('RDS_SSL_REJECT_UNAUTHORIZED', 'false').toLowerCase() === 'true',
     };
   }
 
