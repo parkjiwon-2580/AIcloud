@@ -9,7 +9,7 @@ export class OnpremService {
   constructor() {
     this.client = axios.create({
       baseURL: requireEnv('ONPREM_API_BASE_URL'),
-      timeout: readNumberEnv('ONPREM_API_TIMEOUT_MS', 3000),
+      timeout: readNumberEnv('ONPREM_API_TIMEOUT_MS', 10000),
     });
   }
 
