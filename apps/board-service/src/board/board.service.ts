@@ -312,9 +312,9 @@ export class BoardService implements OnModuleDestroy {
       return { connectionString, ssl };
     }
 
-    const password = readEnv('DATABASE_PASSWORD') || readEnv('RDS_PASSWORD');
+    const password = readEnv('RDS_PASSWORD');
     if (!password) {
-      throw new Error('DATABASE_PASSWORD is required');
+      throw new Error('RDS_PASSWORD is required');
     }
 
     return {

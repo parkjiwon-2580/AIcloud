@@ -578,9 +578,9 @@ document.getElementById("questionnaireForm").addEventListener("submit", async (e
     const created = await questionnaireApi.create(payload);
     setLastConsultationId(created.consultationId);
     try {
-      await aiApi.analyzeMock(created.consultationId);
+      await aiApi.analyze(created.consultationId);
     } catch (error) {
-      alert(`문진은 저장되었습니다. AI mock 분석은 나중에 다시 실행해 주세요. ${friendlyApiError(error, "ai")}`);
+      alert(`문진은 저장되었습니다. AI 분석은 나중에 다시 실행해 주세요. ${friendlyApiError(error, "ai")}`);
     }
     navigate(`result?id=${created.consultationId}`);
   } catch (error) {
@@ -668,10 +668,12 @@ async function showResult(id) {
     summary: "문진은 저장되었지만 AI 분석 결과가 아직 생성되지 않았습니다.",
     risk_level: "UNKNOWN",
     department_hint: "확인 필요",
-    recommendation: "AI mock 분석을 실행하거나 잠시 뒤 다시 확인해 주세요.",
+    recommendation: "AI 분석을 실행하거나 잠시 뒤 다시 확인해 주세요.",
     disclaimer: "본 결과는 의료진 진단을 대체하지 않는 참고용입니다.",
   };
-  const risk = String(data.risk_level || "UNKNOWN").toLowerCase();
+  const riskLevel = data.risk_level || data.riskLevel || "UNKNOWN";
+  const departmentHint = data.department_hint || data.departmentHint || "소아청소년과";
+  const risk = String(riskLevel).toLowerCase();
 
   document.getElementById("resultCard").innerHTML = `
     <div class="result-visual">
@@ -679,8 +681,8 @@ async function showResult(id) {
     </div>
     <div class="result-body">
       <div class="risk-box">
-        <span>위험도 ${escapeHtml(data.risk_level || "UNKNOWN")}</span>
-        <span>${data.risk_level === "LOW" ? "관찰 가능" : "주의 깊게 살펴봐 주세요"}</span>
+        <span>위험도 ${escapeHtml(riskLevel)}</span>
+        <span>${riskLevel === "LOW" ? "관찰 가능" : "주의 깊게 살펴봐 주세요"}</span>
       </div>
       <section>
         <h2>${escapeHtml(data.summary_title || "AI 문진 요약")}</h2>
@@ -688,7 +690,7 @@ async function showResult(id) {
       </section>
       <section>
         <h2>추천 진료과</h2>
-        <p>${escapeHtml(data.department_hint || "소아청소년과")}</p>
+        <p>${escapeHtml(departmentHint)}</p>
       </section>
       <section>
         <h2>권장 사항</h2>
@@ -699,7 +701,7 @@ async function showResult(id) {
         ${
           result?.resultJson
             ? ""
-            : `<button class="ghost-button" data-run-mock-result="${escapeHtml(id)}" type="button">AI mock 분석 실행</button>`
+            : `<button class="ghost-button" data-run-ai-analysis="${escapeHtml(id)}" type="button">AI 분석 실행</button>`
         }
         <button class="primary-button" data-pdf-key="${escapeHtml(result?.pdfS3Key || "")}" type="button">${
           result?.pdfS3Key ? "PDF 다운로드" : "PDF 준비 중"
@@ -708,12 +710,12 @@ async function showResult(id) {
     </div>
   `;
 
-  document.querySelector("[data-run-mock-result]")?.addEventListener("click", async (event) => {
+  document.querySelector("[data-run-ai-analysis]")?.addEventListener("click", async (event) => {
     try {
-      await aiApi.analyzeMock(event.currentTarget.dataset.runMockResult);
+      await aiApi.analyze(event.currentTarget.dataset.runAiAnalysis);
       await showResult(id);
     } catch (error) {
-      alert(`AI mock 분석을 실행하지 못했습니다. ${friendlyApiError(error, "ai")}`);
+      alert(`AI 분석을 실행하지 못했습니다. ${friendlyApiError(error, "ai")}`);
     }
   });
 

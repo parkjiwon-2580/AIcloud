@@ -16,6 +16,13 @@ const DEFAULT_BASE_URLS = {
   board: "",
   hospital: "",
 };
+// const DEFAULT_BASE_URLS = {
+//   auth: "http://localhost:3001",
+//   questionnaire: "http://localhost:3002",
+//   ai: "http://localhost:3003",
+//   board: "http://localhost:3004",
+//   hospital: "http://localhost:3005",
+// };
 
 const ENV_KEYS = {
   auth: "VITE_AUTH_API_BASE_URL",
