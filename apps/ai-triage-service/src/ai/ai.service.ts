@@ -17,7 +17,7 @@ export class AiService {
       await pool.query(
         `
         SELECT *
-        FROM consultations
+        FROM ai_care.consultations
         WHERE id = $1
         `,
         [consultationId],
@@ -43,14 +43,16 @@ export class AiService {
         text,
       );
 
-    const result =
+    const modelResult =
       await this.bedrockService.analyze(
         kiwi.tokens,
       );
+    const result =
+      this.normalizeModelResult(modelResult);
 
     await pool.query(
       `
-      INSERT INTO ai_results
+      INSERT INTO ai_care.ai_results
       (
         consultation_id,
         result_json
@@ -84,7 +86,7 @@ export class AiService {
       await pool.query(
         `
         SELECT *
-        FROM ai_results
+        FROM ai_care.ai_results
         WHERE consultation_id = $1
         `,
         [consultationId],
@@ -99,7 +101,7 @@ export class AiService {
       id,
       email,
       nickname
-    FROM users
+    FROM ai_care.users
     LIMIT 5
   `);
 
@@ -109,7 +111,7 @@ export class AiService {
 async consultationTest() {
   const result = await pool.query(`
     SELECT *
-    FROM consultations
+    FROM ai_care.consultations
     LIMIT 5
   `);
 
@@ -131,4 +133,69 @@ async showTables() {
 
   return result.rows;
 }
+
+  private normalizeModelResult(modelResult: unknown) {
+    const parsed = this.extractJsonFromModelResult(modelResult);
+    if (!parsed || typeof parsed !== 'object') {
+      return modelResult;
+    }
+
+    const raw = parsed as Record<string, unknown>;
+    const riskLevel = String(raw.risk_level ?? raw.riskLevel ?? 'UNKNOWN');
+    const possibleDiseases = Array.isArray(raw.possibleDiseases)
+      ? raw.possibleDiseases.map(String)
+      : [];
+    const recommendation = String(raw.recommendation ?? '');
+
+    return {
+      summary_title:
+        raw.summary_title ??
+        raw.summaryTitle ??
+        (possibleDiseases.length > 0 ? '증상 기반 참고 요약' : 'AI 문진 참고 요약'),
+      summary:
+        raw.summary ??
+        (possibleDiseases.length > 0
+          ? `입력된 증상을 바탕으로 ${possibleDiseases.join(', ')} 관련 가능성을 참고할 수 있습니다.`
+          : '입력된 증상을 바탕으로 AI 참고 요약을 생성했습니다.'),
+      risk_level: riskLevel,
+      department_hint:
+        raw.department_hint ??
+        raw.departmentHint ??
+        '소아청소년과',
+      recommendation,
+      emergency: Boolean(raw.emergency),
+      possible_diseases: possibleDiseases,
+      disclaimer: '본 결과는 의료진 진단을 대체하지 않는 참고용입니다.',
+      model_raw: raw,
+    };
+  }
+
+  private extractJsonFromModelResult(modelResult: unknown): unknown {
+    if (!modelResult || typeof modelResult !== 'object') {
+      return modelResult;
+    }
+
+    const content = (modelResult as { content?: unknown }).content;
+    if (!Array.isArray(content)) {
+      return modelResult;
+    }
+
+    const textBlock = content.find(
+      (item) =>
+        item &&
+        typeof item === 'object' &&
+        'text' in item &&
+        typeof (item as { text?: unknown }).text === 'string',
+    ) as { text: string } | undefined;
+
+    if (!textBlock) {
+      return modelResult;
+    }
+
+    try {
+      return JSON.parse(textBlock.text);
+    } catch {
+      return modelResult;
+    }
+  }
 }

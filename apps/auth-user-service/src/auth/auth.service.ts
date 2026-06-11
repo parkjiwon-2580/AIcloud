@@ -122,7 +122,7 @@ export class AuthService implements OnModuleDestroy {
     try {
       const result = await this.pool.query(
         `
-          INSERT INTO users (id, email, password_hash, nickname, role)
+          INSERT INTO ai_care.users (id, email, password_hash, nickname, role)
           VALUES ($1, $2, $3, $4, 'USER')
           RETURNING id, email, password_hash, nickname, role
         `,
@@ -141,7 +141,7 @@ export class AuthService implements OnModuleDestroy {
     const result = await this.pool.query(
       `
         SELECT id, email, password_hash, nickname, role
-        FROM users
+        FROM ai_care.users
         WHERE email = $1
         LIMIT 1
       `,
@@ -151,7 +151,7 @@ export class AuthService implements OnModuleDestroy {
   }
 
   private async deleteUser(id: string) {
-    await this.pool.query('DELETE FROM users WHERE id = $1', [id]).catch(() => undefined);
+    await this.pool.query('DELETE FROM ai_care.users WHERE id = $1', [id]).catch(() => undefined);
   }
 
   private toUserRecord(row: {
@@ -243,9 +243,9 @@ export class AuthService implements OnModuleDestroy {
       return { connectionString, ssl };
     }
 
-    const password = readEnv('DATABASE_PASSWORD') || readEnv('RDS_PASSWORD');
+    const password = readEnv('RDS_PASSWORD');
     if (!password) {
-      throw new Error('DATABASE_PASSWORD is required');
+      throw new Error('RDS_PASSWORD is required');
     }
 
     return {
