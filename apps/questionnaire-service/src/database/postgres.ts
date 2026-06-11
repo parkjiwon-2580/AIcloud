@@ -1,18 +1,30 @@
-import { Pool } from 'pg';
+import { Pool, type PoolConfig } from 'pg';
 
-export const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  database: process.env.DB_NAME,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  ssl: {
-    rejectUnauthorized: false,
-  },
-});
+function databaseSslConfig(): PoolConfig['ssl'] {
+  const enabled = (process.env.RDS_SSL ?? 'false').toLowerCase();
+  if (!['true', '1', 'require'].includes(enabled)) {
+    return false;
+  }
+  return {
+    rejectUnauthorized: (process.env.RDS_SSL_REJECT_UNAUTHORIZED ?? 'false').toLowerCase() === 'true',
+  };
+}
 
-console.log('RDS CONFIG', {
-  host: process.env.DB_HOST,
-  port: process.env.DB_PORT,
-  database: process.env.DB_NAME,
-});
+function databaseConfig(): PoolConfig {
+  const connectionString = process.env.DATABASE_URL;
+  const ssl = databaseSslConfig();
+  if (connectionString) {
+    return { connectionString, ssl };
+  }
+
+  return {
+    host: process.env.RDS_HOST,
+    port: Number(process.env.RDS_PORT ?? 5432),
+    database: process.env.RDS_DB_NAME,
+    user: process.env.RDS_USERNAME,
+    password: process.env.RDS_PASSWORD,
+    ssl,
+  };
+}
+
+export const pool = new Pool(databaseConfig());

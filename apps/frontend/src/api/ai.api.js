@@ -1,9 +1,14 @@
 import { request } from "./client.js";
 
 export const aiApi = {
-  analyzeMock(consultationId) {
-    return request("ai", `/ai/questionnaires/${encodeURIComponent(consultationId)}/mock-result`, {
+  analyze(consultationId) {
+    return request("ai", "/ai/analyze", {
       method: "POST",
+      body: { consultationId },
     });
+  },
+
+  result(consultationId) {
+    return request("ai", `/ai/result/${encodeURIComponent(consultationId)}`);
   },
 };

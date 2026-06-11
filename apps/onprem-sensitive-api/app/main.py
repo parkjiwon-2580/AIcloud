@@ -1,3 +1,4 @@
+from datetime import date
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -12,8 +13,14 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models import SensitiveChild, SensitiveConsultation, SensitiveProfile
-from app.security import decrypt_text, encrypt_json, encrypt_text
+from app.security import encrypt_json
 
+
+with engine.begin() as connection:
+    if engine.dialect.name == "postgresql":
+        connection.execute(text("CREATE SCHEMA IF NOT EXISTS ai_care"))
+    elif engine.dialect.name == "sqlite":
+        connection.exec_driver_sql("ATTACH DATABASE ':memory:' AS ai_care")
 
 Base.metadata.create_all(bind=engine)
 
@@ -61,6 +68,15 @@ def get_or_create_profile(db: Session, cloud_user_id: UUID) -> SensitiveProfile:
     return profile
 
 
+def parse_birth_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="birth_date must be YYYY-MM-DD") from exc
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -83,11 +99,9 @@ def create_child(request: ChildRequest, db: Session = Depends(get_db)):
     profile = get_or_create_profile(db, request.cloud_user_id)
     child = SensitiveChild(
         id=uuid4(),
-        profiles_id=profile.id,
-        name_enc=encrypt_text(request.name),
-        birth_date_enc=encrypt_text(request.birth_date),
-        gender_enc=encrypt_text(request.gender),
-        detail_json_enc=encrypt_json(request.detail_json),
+        profile_id=profile.id,
+        child_name=request.name,
+        child_birth_date=parse_birth_date(request.birth_date),
     )
     db.add(child)
     db.commit()
@@ -110,16 +124,16 @@ def list_children(
 
     children = (
         db.query(SensitiveChild)
-        .filter(SensitiveChild.profiles_id == profile.id)
+        .filter(SensitiveChild.profile_id == profile.id)
         .order_by(SensitiveChild.created_at.desc())
         .all()
     )
     return [
         {
             "id": child.id,
-            "name": decrypt_text(child.name_enc),
-            "birth_date": decrypt_text(child.birth_date_enc),
-            "gender": decrypt_text(child.gender_enc),
+            "name": child.child_name,
+            "birth_date": child.child_birth_date.isoformat() if child.child_birth_date else None,
+            "gender": None,
             "created_at": child.created_at,
             "updated_at": child.updated_at,
         }
@@ -138,13 +152,9 @@ def update_child(
         raise HTTPException(status_code=404, detail="Child not found")
 
     if request.name is not None:
-        child.name_enc = encrypt_text(request.name)
+        child.child_name = request.name
     if request.birth_date is not None:
-        child.birth_date_enc = encrypt_text(request.birth_date)
-    if request.gender is not None:
-        child.gender_enc = encrypt_text(request.gender)
-    if request.detail_json is not None:
-        child.detail_json_enc = encrypt_json(request.detail_json)
+        child.child_birth_date = parse_birth_date(request.birth_date)
 
     db.commit()
     db.refresh(child)
@@ -157,7 +167,7 @@ def create_consultation(request: ConsultationRequest, db: Session = Depends(get_
         id=uuid4(),
         consultation_id=request.consultation_id,
         cloud_user_id=request.cloud_user_id,
-        raw_enc=encrypt_json(request.raw_payload),
+        sensitive_content=encrypt_json(request.raw_payload),
     )
     db.add(consultation)
     db.commit()
