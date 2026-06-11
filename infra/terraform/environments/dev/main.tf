@@ -15,13 +15,13 @@ terraform {
       version = "~> 2.13"
     }
     kubernetes = {
-    source  = "hashicorp/kubernetes"
-    version = "~> 2.30"
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.30"
     }
     null = {
-    source  = "hashicorp/null"
-    version = "~> 3.2"
-  }
+      source  = "hashicorp/null"
+      version = "~> 3.2"
+    }
   }
 }
 
@@ -67,14 +67,14 @@ module "existing_network" {
 module "onprem_network" {
   source = "../../modules/onprem-network"
 
-  onprem_vpc_id                 = var.onprem_vpc_id
-  onprem_public_subnet_id       = var.onprem_public_subnet_id
-  onprem_private_subnet_id      = var.onprem_private_subnet_id
-  onprem_internet_gateway_id    = var.onprem_internet_gateway_id
-  onprem_public_route_table_id  = var.onprem_public_route_table_id
-  onprem_private_route_table_id = var.onprem_private_route_table_id
-  expected_onprem_vpc_cidr      = var.expected_onprem_vpc_cidr
-  tags                          = local.common_tags
+  onprem_vpc_id                  = var.onprem_vpc_id
+  onprem_public_subnet_id        = var.onprem_public_subnet_id
+  onprem_private_subnet_id       = var.onprem_private_subnet_id
+  onprem_internet_gateway_id     = var.onprem_internet_gateway_id
+  onprem_public_route_table_id   = var.onprem_public_route_table_id
+  onprem_private_route_table_id  = var.onprem_private_route_table_id
+  expected_onprem_vpc_cidr       = var.expected_onprem_vpc_cidr
+  tags                           = local.common_tags
   ssm_endpoint_security_group_id = module.security.ssm_endpoint_security_group_id
 }
 
@@ -92,6 +92,7 @@ module "security" {
   fastapi_port            = var.fastapi_port
   postgres_port           = var.postgres_port
   tags                    = local.common_tags
+  cluster_name            = var.cluster_name
 }
 
 module "service_nat_gateway" {
@@ -146,8 +147,8 @@ module "vpn" {
 
 module "rds" {
   source = "../../modules/rds"
-  
-  db_password = var.db_password
+
+  db_password             = var.db_password
   project_name            = var.project_name
   environment             = var.environment
   private_data_subnet_ids = module.existing_network.private_data_subnet_ids
@@ -218,7 +219,7 @@ resource "aws_vpc_security_group_ingress_rule" "rds_from_bastion" {
 module "app_services" {
   source = "../../modules/app-services"
 
-  project_name = var.project_name
+  project_name                      = var.project_name
   environment                       = var.environment
   app_ecr_repository_names          = var.app_ecr_repository_names
   ecr_force_delete                  = var.ecr_force_delete
@@ -340,7 +341,7 @@ resource "aws_eks_access_policy_association" "hyeongwook_admin" {
 }
 
 module "helm" {
-  source = "../../modules/helm"
+  source     = "../../modules/helm"
   depends_on = [module.eks]
 }
 
@@ -351,4 +352,15 @@ module "k8s" {
     module.eks,
     module.helm
   ]
+}
+
+module "karpenter" {
+  source = "../../modules/karpenter"
+
+  cluster_name          = var.cluster_name
+  eks_oidc_provider_arn = module.eks.eks_oidc_provider_arn
+  eks_oidc_issuer_url   = module.eks.eks_oidc_issuer_url
+  eks_node_role_name    = module.eks.eks_node_role_name
+
+  tags = local.common_tags
 }

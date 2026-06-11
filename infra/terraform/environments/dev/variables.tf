@@ -430,3 +430,8 @@ variable "create_terraform_apply_role" {
 variable "bastion_key_name" {
   type = string
 }
+
+variable "cluster_name" {
+  type    = string
+  default = "ai-care-dev-eks"
+}
