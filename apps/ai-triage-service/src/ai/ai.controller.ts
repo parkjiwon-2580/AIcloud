@@ -9,7 +9,12 @@ export class AiController {
   usersTest() {
     return this.aiService.testUsers();
   }
-
+  
+  @Get('health')
+  health() {
+    return { status: 'ok', service: 'ai-triage-service' };
+  }
+  
   @Get('consultation-test')
   consultationTest() {
     return this.aiService.consultationTest();
