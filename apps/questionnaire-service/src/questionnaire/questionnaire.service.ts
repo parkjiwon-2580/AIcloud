@@ -9,6 +9,7 @@ import { OnpremService } from '../onprem/onprem.service';
 import { RequestUserService } from '../request-user.service';
 import { SqsService } from '../sqs/sqs.service';
 import { CreateQuestionnaireDto } from './dto/create-questionnaire.dto';
+import { pool } from '../database/postgres';
 
 const KNOWN_SYMPTOMS = [
   '발열',
@@ -25,18 +26,9 @@ const KNOWN_SYMPTOMS = [
   '재채기',
 ];
 
-interface StoredConsultation {
-  id: string;
-  userId: string;
-  childId: string;
-  contentData: Record<string, unknown>;
-  symptomSummary: string;
-  createdAt: Date;
-}
 
 @Injectable()
 export class QuestionnaireService {
-  private readonly consultations = new Map<string, StoredConsultation>();
 
   constructor(
     private readonly onprem: OnpremService,
@@ -67,15 +59,42 @@ export class QuestionnaireService {
       },
     };
 
-    const consultation: StoredConsultation = {
-      id,
-      userId,
-      childId: dto.childId,
-      contentData,
-      symptomSummary,
-      createdAt: new Date(),
-    };
-    this.consultations.set(id, consultation);
+const createdAt = new Date();
+
+
+console.log('RDS INSERT START', {
+  id,
+  userId,
+  childId: dto.childId,
+});
+
+await pool.query(
+  `
+  INSERT INTO ai_care.consultations
+  (
+    id,
+    user_id,
+    child_id,
+    content_data,
+    symptom_summary
+  )
+  VALUES
+  (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5
+  )
+  `,
+  [
+    id,
+    userId,
+    dto.childId,
+    JSON.stringify(contentData),
+    symptomSummary,
+  ],
+);
 
     try {
       await this.onprem.storeConsultation({
@@ -87,15 +106,14 @@ export class QuestionnaireService {
         },
       });
     } catch (error) {
-      this.consultations.delete(id);
       throw error;
     }
 
     const event = await this.sqs.sendQuestionnaireMessage({
-      consultationId: id,
-      userId,
-      createdAt: consultation.createdAt,
-    });
+  consultationId: id,
+  userId,
+  createdAt,
+});
 
     return {
       consultationId: id,
@@ -105,48 +123,97 @@ export class QuestionnaireService {
     };
   }
 
-  async history(authorization?: string, childId?: string) {
-    const user = this.requestUser.requireUser(authorization);
-    const consultations = [...this.consultations.values()]
-      .filter((consultation) => consultation.userId === user.id)
-      .filter((consultation) => !childId || consultation.childId === childId)
-      .sort((left, right) => right.createdAt.getTime() - left.createdAt.getTime());
+  async history(
+  authorization?: string,
+  childId?: string,
+) {
+  const user =
+    this.requestUser.requireUser(
+      authorization,
+    );
 
-    return consultations.map((consultation) => {
-      return {
-        consultationId: consultation.id,
-        childId: consultation.childId,
-        createdAt: consultation.createdAt,
-        title: consultation.symptomSummary ?? '문진 기록',
-        symptomSummary: consultation.symptomSummary,
-        riskLevel: 'UNKNOWN',
-        departmentHint: null,
-        pdfS3Key: null,
-      };
-    });
-  }
+  const result =
+    await pool.query(
+      `
+      SELECT
+        id,
+        child_id,
+        symptom_summary,
+        created_at
+      FROM ai_care.consultations
+      WHERE user_id = $1
+      ${
+        childId
+          ? 'AND child_id = $2'
+          : ''
+      }
+      ORDER BY created_at DESC
+      `,
+      childId
+        ? [user.id, childId]
+        : [user.id],
+    );
 
-  async result(id: string, authorization?: string) {
-    const user = this.requestUser.requireUser(authorization);
-    const consultation = await this.findOwnedConsultation(id, user.id);
-    return {
-      consultationId: consultation.id,
-      childId: consultation.childId,
-      resultJson: null,
+  return result.rows.map(
+    (consultation) => ({
+      consultationId:
+        consultation.id,
+      childId:
+        consultation.child_id,
+      createdAt:
+        consultation.created_at,
+      title:
+        consultation.symptom_summary ??
+        '문진 기록',
+      symptomSummary:
+        consultation.symptom_summary,
+      riskLevel: 'UNKNOWN',
+      departmentHint: null,
       pdfS3Key: null,
-    };
+    }),
+  );
+}
+
+  async result(
+  id: string,
+  authorization?: string,
+) {
+  const user =
+    this.requestUser.requireUser(
+      authorization,
+    );
+
+  const result =
+    await pool.query(
+      `
+      SELECT *
+      FROM ai_care.consultations
+      WHERE id = $1
+      AND user_id = $2
+      `,
+      [id, user.id],
+    );
+
+  if (
+    result.rows.length === 0
+  ) {
+    throw new NotFoundException(
+      'Consultation not found',
+    );
   }
 
-  private async findOwnedConsultation(id: string, userId: string) {
-    const consultation = this.consultations.get(id);
-    if (!consultation) {
-      throw new NotFoundException('Consultation not found');
-    }
-    if (consultation.userId !== userId) {
-      throw new ForbiddenException('Not your consultation');
-    }
-    return consultation;
-  }
+  const consultation =
+    result.rows[0];
+
+  return {
+    consultationId:
+      consultation.id,
+    childId:
+      consultation.child_id,
+    resultJson: null,
+    pdfS3Key: null,
+  };
+}
 
   private extractKeywords(symptomText: string): string[] {
     return KNOWN_SYMPTOMS.filter((keyword) => symptomText.includes(keyword)).slice(0, 5);
