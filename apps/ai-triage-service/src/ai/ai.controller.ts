@@ -5,18 +5,40 @@ import { AiService } from './ai.service';
 export class AiController {
   constructor(private readonly aiService: AiService) {}
 
-  @Post('ai/analyze-mock')
-  analyzeMock(@Body() body: { consultationId: string }) {
-    return this.aiService.analyzeByBody(body);
+  @Get('users-test')
+  usersTest() {
+    return this.aiService.testUsers();
   }
 
-  @Post('ai/questionnaires/:id/mock-result')
-  mockResult(@Param('id') id: string) {
-    return this.aiService.createMockResult(id);
+  @Get('consultation-test')
+  consultationTest() {
+    return this.aiService.consultationTest();
   }
 
-  @Get('health')
-  health() {
-    return { status: 'ok', service: 'ai-triage-service' };
+  @Post('ai/analyze')
+  analyze(
+    @Body()
+    body: {
+      consultationId: string;
+    },
+  ) {
+    return this.aiService.analyze(
+      body.consultationId,
+    );
   }
+
+  @Get('ai/result/:consultationId')
+  getResult(
+    @Param('consultationId')
+    consultationId: string,
+  ) {
+    return this.aiService.getResult(
+      consultationId,
+    );
+  }
+
+  @Get('tables')
+tables() {
+  return this.aiService.showTables();
+}
 }

@@ -1,37 +1,134 @@
 import { Injectable } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { readEnv } from '../config';
-
-const KNOWN_SYMPTOMS = ['발열', '열', '기침', '콧물', '구토', '설사', '복통', '두통', '발진', '가래'];
+import { pool } from '../database/postgres';
+import { KiwiService } from '../kiwi/kiwi.service';
+import { BedrockService } from '../bedrock/bedrock.service';
 
 @Injectable()
 export class AiService {
-  analyzeByBody(input: { consultationId: string }) {
-    return this.createMockResult(input.consultationId);
-  }
+  constructor(
+    private readonly kiwiService: KiwiService,
+    private readonly bedrockService: BedrockService,
+  ) {}
 
-  async createMockResult(consultationId: string) {
-    const keywords = KNOWN_SYMPTOMS.slice(0, 2);
-    const title = keywords.length > 0 ? `${keywords.join('·')} 증상` : '영유아 증상 상담';
-    const resultJson = {
-      summary_title: title,
-      summary: `입력된 증상 기준으로 ${title}이 주요 증상입니다.`,
-      risk_level: 'MEDIUM',
-      department_hint: '소아청소년과',
-      recommendation: '증상이 지속되거나 고열이 동반되면 의료진 진료를 권장합니다.',
-      disclaimer: '본 결과는 의료진 진단을 대체하지 않는 참고용입니다.',
-    };
+  async analyze(
+    consultationId: string,
+  ) {
+    const consultation =
+      await pool.query(
+        `
+        SELECT *
+        FROM consultations
+        WHERE id = $1
+        `,
+        [consultationId],
+      );
 
-    const prefix = readEnv('S3_REPORT_PREFIX', 'reports/').replace(/\/?$/, '/');
-    const s3Key = `${prefix}consultations/${consultationId}/result.pdf`;
-    return {
-      result: {
-        id: randomUUID(),
+    if (
+      consultation.rows.length === 0
+    ) {
+      throw new Error(
+        'consultation not found',
+      );
+    }
+
+    const content =
+      consultation.rows[0]
+        .content_data;
+
+    const text =
+      JSON.stringify(content);
+
+    const kiwi =
+      await this.kiwiService.analyze(
+        text,
+      );
+
+    const result =
+      await this.bedrockService.analyze(
+        kiwi.tokens,
+      );
+
+    await pool.query(
+      `
+      INSERT INTO ai_results
+      (
+        consultation_id,
+        result_json
+      )
+      VALUES
+      (
+        $1,
+        $2
+      )
+      ON CONFLICT
+      (
+        consultation_id
+      )
+      DO UPDATE SET
+      result_json =
+      EXCLUDED.result_json
+      `,
+      [
         consultationId,
-        resultJson,
-        createdAt: new Date(),
-      },
-      pdfS3Key: s3Key,
-    };
+        JSON.stringify(result),
+      ],
+    );
+
+    return result;
   }
+
+  async getResult(
+    consultationId: string,
+  ) {
+    const result =
+      await pool.query(
+        `
+        SELECT *
+        FROM ai_results
+        WHERE consultation_id = $1
+        `,
+        [consultationId],
+      );
+
+    return result.rows[0];
+  }
+
+  async testUsers() {
+  const result = await pool.query(`
+    SELECT
+      id,
+      email,
+      nickname
+    FROM users
+    LIMIT 5
+  `);
+
+  return result.rows;
+}
+
+async consultationTest() {
+  const result = await pool.query(`
+    SELECT *
+    FROM consultations
+    LIMIT 5
+  `);
+
+  return result.rows;
+}
+
+async showTables() {
+  const result = await pool.query(`
+    SELECT
+      table_schema,
+      table_name
+    FROM information_schema.tables
+    WHERE table_schema NOT IN (
+      'pg_catalog',
+      'information_schema'
+    )
+    ORDER BY table_schema, table_name
+  `);
+
+  return result.rows;
+}
 }
