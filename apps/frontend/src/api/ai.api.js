@@ -11,4 +11,8 @@ export const aiApi = {
   result(consultationId) {
     return request("ai", `/ai/result/${encodeURIComponent(consultationId)}`);
   },
+
+  reportDownload(consultationId) {
+    return request("ai", `/ai/report/${encodeURIComponent(consultationId)}/download`);
+  },
 };

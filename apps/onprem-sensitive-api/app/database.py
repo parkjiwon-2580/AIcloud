@@ -1,16 +1,19 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 
-DATABASE_URL = os.getenv("DATABASE_URL", "")
+DATABASE_URL = os.getenv("ONPREM_DATABASE_URL") or os.getenv("DATABASE_URL", "")
 
 if not DATABASE_URL:
     # Local-only fallback keeps the API importable for development and compile checks.
     # Production must provide DATABASE_URL through runtime secrets/config.
     DATABASE_URL = "sqlite:///:memory:"
-
+print("DATABASE_URL =", DATABASE_URL)
 
 engine = create_engine(
     DATABASE_URL,

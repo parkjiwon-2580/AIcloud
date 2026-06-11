@@ -11,8 +11,9 @@ data:
   AWS_REGION: "ap-northeast-2"
   # S3 설정
   S3_BUCKET_NAME: "ai-care-dev-reports-105959916837"
-  S3_BOARD_IMAGE_PREFIX: "reports/"
+  S3_REPORT_PREFIX: "reports/"
   S3_PRESIGNED_URL_EXPIRE_SECONDS: "300"
+  REPORT_FONT_PATH: ""
   # RDS 접속 정보 (비밀번호는 Secret에서 관리)
   RDS_HOST: "ai-care-dev-postgres.czeumgqsmwh8.ap-northeast-2.rds.amazonaws.com"
   RDS_PORT: "5432"

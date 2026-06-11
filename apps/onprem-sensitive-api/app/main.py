@@ -19,10 +19,49 @@ from app.security import encrypt_json
 with engine.begin() as connection:
     if engine.dialect.name == "postgresql":
         connection.execute(text("CREATE SCHEMA IF NOT EXISTS ai_care"))
+        connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS ai_care.ai_results (
+                    consultation_id UUID PRIMARY KEY,
+                    result_json JSONB NOT NULL,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                CREATE TABLE IF NOT EXISTS ai_care.consultation_assets (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    consultation_id UUID NOT NULL,
+                    asset_type VARCHAR(50) NOT NULL,
+                    s3_bucket VARCHAR(255) NOT NULL,
+                    s3_key TEXT NOT NULL,
+                    created_at TIMESTAMPTZ DEFAULT NOW(),
+                    updated_at TIMESTAMPTZ DEFAULT NOW()
+                )
+                """
+            )
+        )
     elif engine.dialect.name == "sqlite":
         connection.exec_driver_sql("ATTACH DATABASE ':memory:' AS ai_care")
 
 Base.metadata.create_all(bind=engine)
+
+if engine.dialect.name == "postgresql":
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                """
+                ALTER TABLE ai_care.sensitive_children
+                ADD COLUMN IF NOT EXISTS child_gender VARCHAR(20)
+                """
+            )
+        )
 
 app = FastAPI(title="Ai클라우드 onprem-sensitive-api")
 
@@ -102,6 +141,7 @@ def create_child(request: ChildRequest, db: Session = Depends(get_db)):
         profile_id=profile.id,
         child_name=request.name,
         child_birth_date=parse_birth_date(request.birth_date),
+        child_gender=request.gender,
     )
     db.add(child)
     db.commit()
@@ -133,7 +173,7 @@ def list_children(
             "id": child.id,
             "name": child.child_name,
             "birth_date": child.child_birth_date.isoformat() if child.child_birth_date else None,
-            "gender": None,
+            "gender": child.child_gender,
             "created_at": child.created_at,
             "updated_at": child.updated_at,
         }
@@ -155,6 +195,8 @@ def update_child(
         child.child_name = request.name
     if request.birth_date is not None:
         child.child_birth_date = parse_birth_date(request.birth_date)
+    if request.gender is not None:
+        child.child_gender = request.gender
 
     db.commit()
     db.refresh(child)

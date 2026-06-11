@@ -1,31 +1,27 @@
-version: '3.8'
-
 services:
-  # 🗄️ 로컬 테스트용 통합 DB (실제 운영의 AWS RDS + On-Prem DB 역할 대체)
   local-db:
     image: postgres:17.9-alpine
     ports:
       - "5432:5432"
     environment:
-      POSTGRES_DB: hospital
+      POSTGRES_DB: aicare
       POSTGRES_USER: root
       POSTGRES_PASSWORD: rootpassword
     volumes:
-      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgres/local-init.sql:/docker-entrypoint-initdb.d/01-local-init.sql:ro
       - local_pg_data:/var/lib/postgresql/data
 
-  # 🛡️ 1. Auth & User Service
   auth-user-service:
     build:
       context: ./apps/auth-user-service
     ports:
-      - "8081:8080" # 로컬 호스트의 8081 포트를 컨테이너의 8080으로 연결
+      - "8081:8080"
     env_file:
       - .env
     depends_on:
       - local-db
+      - onprem-sensitive-api
 
-  # 📝 2. Questionnaire Service
   questionnaire-service:
     build:
       context: ./apps/questionnaire-service
@@ -33,8 +29,12 @@ services:
       - "8082:8080"
     env_file:
       - .env
+    volumes:
+      - ${USERPROFILE}/.aws:/root/.aws:ro
+    depends_on:
+      - local-db
+      - onprem-sensitive-api
 
-  # 📋 3. Board Service
   board-service:
     build:
       context: ./apps/board-service
@@ -45,7 +45,6 @@ services:
     depends_on:
       - local-db
 
-  # 🤖 4. AI Triage Service
   ai-triage-service:
     build:
       context: ./apps/ai-triage-service
@@ -53,8 +52,12 @@ services:
       - "8084:8080"
     env_file:
       - .env
+    volumes:
+      - local_reports:/app/local-reports
+      - ${USERPROFILE}/.aws:/root/.aws:ro
+    depends_on:
+      - local-db
 
-  # 🏥 5. Hospital Recommendation Service
   hospital-recommendation-service:
     build:
       context: ./apps/hospital-recommendation-service
@@ -63,17 +66,28 @@ services:
     env_file:
       - .env
 
-  # 🔒 6. On-Prem Sensitive API (실제론 VPN 너머에 있지만 로컬에선 같이 띄움)
   onprem-sensitive-api:
     build:
       context: ./apps/onprem-sensitive-api
     ports:
-      - "8086:8080"
+      - "8086:9000"
     env_file:
       - .env
     depends_on:
       - local-db
 
-# DB 데이터가 컨테이너 재시작 시 날아가지 않도록 볼륨 지정
+  frontend:
+    build:
+      context: ./apps/frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - auth-user-service
+      - questionnaire-service
+      - board-service
+      - ai-triage-service
+      - hospital-recommendation-service
+
 volumes:
   local_pg_data:
+  local_reports:

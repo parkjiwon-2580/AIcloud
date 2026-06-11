@@ -61,6 +61,10 @@ class SensitiveChild(Base):
         Date,
     )
 
+    child_gender = Column(
+        String(20),
+    )
+
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),

@@ -719,10 +719,19 @@ async function showResult(id) {
     }
   });
 
-  document.querySelector("[data-pdf-key]")?.addEventListener("click", (event) => {
+  document.querySelector("[data-pdf-key]")?.addEventListener("click", async (event) => {
     const pdfKey = event.currentTarget.dataset.pdfKey;
     if (!pdfKey) return;
-    alert(`PDF 파일 경로: ${pdfKey}`);
+    try {
+      const payload = await aiApi.reportDownload(id);
+      if (payload?.downloadUrl) {
+        window.open(payload.downloadUrl, "_blank", "noopener");
+        return;
+      }
+      alert("PDF 다운로드 URL이 아직 준비되지 않았습니다.");
+    } catch (error) {
+      alert(`PDF 다운로드를 준비하지 못했습니다. ${friendlyApiError(error, "ai")}`);
+    }
   });
 }
 

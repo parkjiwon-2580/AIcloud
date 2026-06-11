@@ -2,12 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { pool } from '../database/postgres';
 import { KiwiService } from '../kiwi/kiwi.service';
 import { BedrockService } from '../bedrock/bedrock.service';
+import { ReportService } from '../report/report.service';
 
 @Injectable()
 export class AiService {
   constructor(
     private readonly kiwiService: KiwiService,
     private readonly bedrockService: BedrockService,
+    private readonly reportService: ReportService,
   ) {}
 
   async analyze(
@@ -48,7 +50,9 @@ export class AiService {
         kiwi.tokens,
       );
     const result =
-      this.normalizeModelResult(modelResult);
+      this.toResultObject(
+        this.normalizeModelResult(modelResult),
+      );
 
     await pool.query(
       `
@@ -76,7 +80,15 @@ export class AiService {
       ],
     );
 
-    return result;
+    const report = await this.reportService.createAndStore(
+      consultation.rows[0],
+      result,
+    );
+
+    return {
+      ...result,
+      pdfS3Key: report.key,
+    };
   }
 
   async getResult(
@@ -93,6 +105,22 @@ export class AiService {
       );
 
     return result.rows[0];
+  }
+
+  async getReportDownloadUrl(
+    consultationId: string,
+  ) {
+    return this.reportService.createDownloadUrl(
+      consultationId,
+    );
+  }
+
+  readLocalReport(
+    key: string,
+  ) {
+    return this.reportService.readLocalReport(
+      key,
+    );
   }
 
   async testUsers() {
@@ -167,6 +195,22 @@ async showTables() {
       possible_diseases: possibleDiseases,
       disclaimer: '본 결과는 의료진 진단을 대체하지 않는 참고용입니다.',
       model_raw: raw,
+    };
+  }
+
+  private toResultObject(result: unknown): Record<string, unknown> {
+    if (result && typeof result === 'object') {
+      return result as Record<string, unknown>;
+    }
+
+    return {
+      summary_title: 'AI questionnaire report',
+      summary: String(result ?? ''),
+      risk_level: 'UNKNOWN',
+      emergency: false,
+      possible_diseases: [],
+      recommendation: '',
+      model_raw: result,
     };
   }
 

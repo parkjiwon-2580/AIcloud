@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Res } from '@nestjs/common';
 import { AiService } from './ai.service';
 
 @Controller()
@@ -40,6 +40,31 @@ export class AiController {
     return this.aiService.getResult(
       consultationId,
     );
+  }
+
+  @Get('ai/report/:consultationId/download')
+  getReportDownloadUrl(
+    @Param('consultationId')
+    consultationId: string,
+  ) {
+    return this.aiService.getReportDownloadUrl(
+      consultationId,
+    );
+  }
+
+  @Get('ai/local-report/:key')
+  getLocalReport(
+    @Param('key')
+    key: string,
+    @Res()
+    response: any,
+  ) {
+    const pdf = this.aiService.readLocalReport(
+      decodeURIComponent(key),
+    );
+    response.setHeader('content-type', 'application/pdf');
+    response.setHeader('content-disposition', 'attachment; filename="consultation-report.pdf"');
+    response.send(pdf);
   }
 
   @Get('tables')
