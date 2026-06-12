@@ -13,7 +13,6 @@ if not DATABASE_URL:
     # Local-only fallback keeps the API importable for development and compile checks.
     # Production must provide DATABASE_URL through runtime secrets/config.
     DATABASE_URL = "sqlite:///:memory:"
-print("DATABASE_URL =", DATABASE_URL)
 
 engine = create_engine(
     DATABASE_URL,

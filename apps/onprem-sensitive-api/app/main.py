@@ -19,33 +19,6 @@ with engine.begin() as connection:
     if engine.dialect.name == "postgresql":
         connection.execute(text("CREATE SCHEMA IF NOT EXISTS ai_care"))
         connection.execute(text("CREATE EXTENSION IF NOT EXISTS pgcrypto"))
-        connection.execute(
-            text(
-                """
-                CREATE TABLE IF NOT EXISTS ai_care.ai_results (
-                    consultation_id UUID PRIMARY KEY,
-                    result_json JSONB NOT NULL,
-                    created_at TIMESTAMPTZ DEFAULT NOW(),
-                    updated_at TIMESTAMPTZ DEFAULT NOW()
-                )
-                """
-            )
-        )
-        connection.execute(
-            text(
-                """
-                CREATE TABLE IF NOT EXISTS ai_care.consultation_assets (
-                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                    consultation_id UUID NOT NULL,
-                    asset_type VARCHAR(50) NOT NULL,
-                    s3_bucket VARCHAR(255) NOT NULL,
-                    s3_key TEXT NOT NULL,
-                    created_at TIMESTAMPTZ DEFAULT NOW(),
-                    updated_at TIMESTAMPTZ DEFAULT NOW()
-                )
-                """
-            )
-        )
     elif engine.dialect.name == "sqlite":
         connection.exec_driver_sql("ATTACH DATABASE ':memory:' AS ai_care")
 
@@ -149,6 +122,14 @@ if engine.dialect.name == "postgresql":
                     END IF;
                 END
                 $$;
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE ai_care.sensitive_children
+                ADD COLUMN IF NOT EXISTS gender_enc TEXT
                 """
             )
         )

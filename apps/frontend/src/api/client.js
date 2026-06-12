@@ -9,20 +9,20 @@ const STORAGE_KEYS = {
   hospital: "aicloud.hospitalApiBaseUrl",
 };
 
-// const DEFAULT_BASE_URLS = {
-//   auth: "",
-//   questionnaire: "",
-//   ai: "",
-//   board: "",
-//   hospital: "",
-// };
 const DEFAULT_BASE_URLS = {
-  auth: "http://localhost:8081",
-  questionnaire: "http://localhost:8082",
-  ai: "http://localhost:8084",
-  board: "http://localhost:8083",
-  hospital: "http://localhost:8085",
+  auth: "",
+  questionnaire: "",
+  ai: "",
+  board: "",
+  hospital: "",
 };
+// const DEFAULT_BASE_URLS = {
+//   auth: "http://localhost:8081",
+//   questionnaire: "http://localhost:8082",
+//   ai: "http://localhost:8084",
+//   board: "http://localhost:8083",
+//   hospital: "http://localhost:8085",
+// };
 
 const ENV_KEYS = {
   auth: "VITE_AUTH_API_BASE_URL",
