@@ -574,6 +574,15 @@ document.getElementById("childForm").addEventListener("submit", async (event) =>
 document.getElementById("questionnaireForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = formData(event.currentTarget);
+  if (!payload.childId) {
+    alert("아이를 먼저 선택해 주세요. 아이가 없으면 마이페이지에서 아이 정보를 등록한 뒤 다시 시도해 주세요.");
+    return;
+  }
+  if (!payload.symptomText?.trim()) {
+    alert("증상을 입력해 주세요.");
+    return;
+  }
+
   try {
     const created = await questionnaireApi.create(payload);
     setLastConsultationId(created.consultationId);

@@ -1,4 +1,3 @@
-from datetime import date
 from typing import Any
 from uuid import UUID, uuid4
 
@@ -13,7 +12,7 @@ from sqlalchemy.orm import Session
 
 from app.database import Base, engine, get_db
 from app.models import SensitiveChild, SensitiveConsultation, SensitiveProfile
-from app.security import encrypt_json
+from app.security import decrypt_json, decrypt_text, encrypt_json, encrypt_text
 
 
 with engine.begin() as connection:
@@ -57,8 +56,117 @@ if engine.dialect.name == "postgresql":
         connection.execute(
             text(
                 """
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_children'
+                        AND column_name = 'profile_id'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_children'
+                        AND column_name = 'profiles_id'
+                    ) THEN
+                        ALTER TABLE ai_care.sensitive_children
+                        RENAME COLUMN profile_id TO profiles_id;
+                    END IF;
+
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_children'
+                        AND column_name = 'child_name'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_children'
+                        AND column_name = 'name_enc'
+                    ) THEN
+                        ALTER TABLE ai_care.sensitive_children
+                        RENAME COLUMN child_name TO name_enc;
+                    END IF;
+
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_children'
+                        AND column_name = 'child_birth_date'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_children'
+                        AND column_name = 'birth_date_enc'
+                    ) THEN
+                        ALTER TABLE ai_care.sensitive_children
+                        RENAME COLUMN child_birth_date TO birth_date_enc;
+                    END IF;
+
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_children'
+                        AND column_name = 'child_gender'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_children'
+                        AND column_name = 'gender_enc'
+                    ) THEN
+                        ALTER TABLE ai_care.sensitive_children
+                        RENAME COLUMN child_gender TO gender_enc;
+                    END IF;
+
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_consultation'
+                        AND column_name = 'sensitive_content'
+                    )
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'ai_care'
+                        AND table_name = 'sensitive_consultation'
+                        AND column_name = 'raw_enc'
+                    ) THEN
+                        ALTER TABLE ai_care.sensitive_consultation
+                        RENAME COLUMN sensitive_content TO raw_enc;
+                    END IF;
+                END
+                $$;
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
                 ALTER TABLE ai_care.sensitive_children
-                ADD COLUMN IF NOT EXISTS child_gender VARCHAR(20)
+                ADD COLUMN IF NOT EXISTS detail_json_enc TEXT
+                """
+            )
+        )
+        connection.execute(
+            text(
+                """
+                ALTER TABLE ai_care.sensitive_children
+                ALTER COLUMN name_enc TYPE TEXT USING name_enc::TEXT,
+                ALTER COLUMN birth_date_enc TYPE TEXT USING birth_date_enc::TEXT,
+                ALTER COLUMN gender_enc TYPE TEXT USING gender_enc::TEXT
                 """
             )
         )
@@ -107,13 +215,22 @@ def get_or_create_profile(db: Session, cloud_user_id: UUID) -> SensitiveProfile:
     return profile
 
 
-def parse_birth_date(value: str | None) -> date | None:
+def read_sensitive_text(value: str | None) -> str | None:
     if not value:
         return None
     try:
-        return date.fromisoformat(value)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail="birth_date must be YYYY-MM-DD") from exc
+        return decrypt_text(value)
+    except Exception:
+        return value
+
+
+def read_sensitive_json(value: str | None) -> dict[str, Any]:
+    if not value:
+        return {}
+    try:
+        return decrypt_json(value)
+    except Exception:
+        return {}
 
 
 @app.get("/health")
@@ -139,9 +256,10 @@ def create_child(request: ChildRequest, db: Session = Depends(get_db)):
     child = SensitiveChild(
         id=uuid4(),
         profile_id=profile.id,
-        child_name=request.name,
-        child_birth_date=parse_birth_date(request.birth_date),
-        child_gender=request.gender,
+        name_enc=encrypt_text(request.name),
+        birth_date_enc=encrypt_text(request.birth_date),
+        gender_enc=encrypt_text(request.gender),
+        detail_json_enc=encrypt_json(request.detail_json),
     )
     db.add(child)
     db.commit()
@@ -171,9 +289,10 @@ def list_children(
     return [
         {
             "id": child.id,
-            "name": child.child_name,
-            "birth_date": child.child_birth_date.isoformat() if child.child_birth_date else None,
-            "gender": child.child_gender,
+            "name": read_sensitive_text(child.name_enc),
+            "birth_date": read_sensitive_text(child.birth_date_enc),
+            "gender": read_sensitive_text(child.gender_enc),
+            "detail_json": read_sensitive_json(child.detail_json_enc),
             "created_at": child.created_at,
             "updated_at": child.updated_at,
         }
@@ -192,11 +311,13 @@ def update_child(
         raise HTTPException(status_code=404, detail="Child not found")
 
     if request.name is not None:
-        child.child_name = request.name
+        child.name_enc = encrypt_text(request.name)
     if request.birth_date is not None:
-        child.child_birth_date = parse_birth_date(request.birth_date)
+        child.birth_date_enc = encrypt_text(request.birth_date)
     if request.gender is not None:
-        child.child_gender = request.gender
+        child.gender_enc = encrypt_text(request.gender)
+    if request.detail_json is not None:
+        child.detail_json_enc = encrypt_json(request.detail_json)
 
     db.commit()
     db.refresh(child)
@@ -205,16 +326,46 @@ def update_child(
 
 @app.post("/internal/sensitive/consultation")
 def create_consultation(request: ConsultationRequest, db: Session = Depends(get_db)):
+    existing = (
+        db.query(SensitiveConsultation)
+        .filter(SensitiveConsultation.consultation_id == request.consultation_id)
+        .first()
+    )
+    if existing:
+        existing.cloud_user_id = request.cloud_user_id
+        existing.raw_enc = encrypt_json(request.raw_payload)
+        db.commit()
+        db.refresh(existing)
+        return {"id": existing.id, "consultation_id": existing.consultation_id}
+
     consultation = SensitiveConsultation(
         id=uuid4(),
         consultation_id=request.consultation_id,
         cloud_user_id=request.cloud_user_id,
-        sensitive_content=encrypt_json(request.raw_payload),
+        raw_enc=encrypt_json(request.raw_payload),
     )
     db.add(consultation)
     db.commit()
     db.refresh(consultation)
     return {"id": consultation.id, "consultation_id": consultation.consultation_id}
+
+
+@app.get("/internal/sensitive/consultation/{consultation_id}")
+def get_consultation(consultation_id: UUID, db: Session = Depends(get_db)):
+    consultation = (
+        db.query(SensitiveConsultation)
+        .filter(SensitiveConsultation.consultation_id == consultation_id)
+        .first()
+    )
+    if not consultation:
+        raise HTTPException(status_code=404, detail="Consultation not found")
+
+    return {
+        "id": consultation.id,
+        "consultation_id": consultation.consultation_id,
+        "cloud_user_id": consultation.cloud_user_id,
+        "raw_payload": decrypt_json(consultation.raw_enc),
+    }
 
 app.include_router(
     analyze_router

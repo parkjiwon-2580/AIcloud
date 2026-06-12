@@ -2,6 +2,15 @@ import { Injectable } from '@nestjs/common';
 import PDFDocument from 'pdfkit';
 import { existsSync } from 'fs';
 
+const FONT_CANDIDATES = [
+  process.env.REPORT_FONT_PATH,
+  '/usr/share/fonts/opentype/unifont/unifont.otf',
+  '/usr/share/fonts/opentype/unifont/unifont_jp.otf',
+  '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',
+  '/usr/share/fonts/noto-cjk/NotoSansCJKkr-Regular.otf',
+  '/usr/share/fonts/noto/NotoSansCJK-Regular.ttc',
+].filter(Boolean) as string[];
+
 type ReportInput = {
   consultationId: string;
   childId?: string | null;
@@ -35,10 +44,11 @@ export class PdfReportService {
   }
 
   private useConfiguredFont(document: PDFKit.PDFDocument) {
-    const fontPath = process.env.REPORT_FONT_PATH;
-    if (fontPath && existsSync(fontPath)) {
-      document.font(fontPath);
-      return;
+    for (const fontPath of FONT_CANDIDATES) {
+      if (existsSync(fontPath)) {
+        document.font(fontPath);
+        return;
+      }
     }
 
     document.font('Helvetica');
@@ -50,6 +60,12 @@ export class PdfReportService {
     const title = String(result.summary_title ?? result.summaryTitle ?? 'AI Questionnaire Report');
     const summary = String(result.summary ?? '');
     const departmentHint = String(result.department_hint ?? result.departmentHint ?? '');
+    const riskReason = String(result.risk_reason ?? result.riskReason ?? '');
+    const hospitalRecommendation = String(
+      result.hospital_recommendation ??
+        result.hospitalRecommendation ??
+        departmentHint,
+    );
     const recommendation = String(result.recommendation ?? '');
     const disclaimer = String(
       result.disclaimer ??
@@ -65,9 +81,17 @@ export class PdfReportService {
 
     this.section(document, 'Symptom Summary', input.symptomSummary ?? '-');
     this.section(document, 'Risk Level', riskLevel);
+    if (riskReason) {
+      this.section(document, 'Risk Reason', riskReason);
+    }
     this.section(document, 'AI Summary', summary || '-');
-    this.section(document, 'Recommended Department', departmentHint || '-');
+    this.section(document, 'Recommended Department', hospitalRecommendation || departmentHint || '-');
     this.section(document, 'Recommendation', recommendation || '-');
+
+    const findings = result.symptom_findings ?? result.symptomFindings;
+    if (Array.isArray(findings) && findings.length > 0) {
+      this.section(document, 'Symptom Interpretation', this.formatFindings(findings));
+    }
 
     const diseases = result.possible_diseases ?? result.possibleDiseases;
     if (Array.isArray(diseases) && diseases.length > 0) {
@@ -87,6 +111,22 @@ export class PdfReportService {
       lineGap: 4,
     });
     document.moveDown();
+  }
+
+  private formatFindings(findings: unknown[]) {
+    return findings
+      .map((finding) => {
+        if (!finding || typeof finding !== 'object') {
+          return `- ${String(finding)}`;
+        }
+
+        const item = finding as Record<string, unknown>;
+        const term = String(item.term ?? '-');
+        const meaning = String(item.meaning ?? item.interpretation ?? '-');
+        const severity = String(item.severity ?? 'UNKNOWN');
+        return `- ${term}: ${meaning} (${severity})`;
+      })
+      .join('\n');
   }
 
   private formatDate(value?: Date | string | null) {
