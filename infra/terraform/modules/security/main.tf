@@ -29,6 +29,7 @@ resource "aws_security_group" "eks_node" {
 
   tags = merge(var.tags, {
     Name = "${local.name_prefix}-eks-node-sg"
+     "karpenter.sh/discovery" = var.cluster_name
   })
 }
 
@@ -195,6 +196,21 @@ resource "aws_vpc_security_group_ingress_rule" "fastapi_from_service_vpc" {
   to_port           = var.fastapi_port
   ip_protocol       = "tcp"
   description       = "FastAPI placeholder from Service VPC."
+
+  tags = var.tags
+}
+
+resource "aws_vpc_security_group_ingress_rule" "fastapi_from_onprem_vpc" {
+  security_group_id = aws_security_group.fastapi.id
+
+  cidr_ipv4 = "172.16.0.0/16"
+
+  from_port = var.fastapi_port
+  to_port   = var.fastapi_port
+
+  ip_protocol = "tcp"
+
+  description = "FastAPI from OnPrem VPC"
 
   tags = var.tags
 }
