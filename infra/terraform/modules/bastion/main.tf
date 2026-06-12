@@ -26,6 +26,13 @@ resource "aws_instance" "bastion" {
 
   iam_instance_profile = aws_iam_instance_profile.bastion_ssm_profile.name
 
+   user_data = <<-EOF
+   #!/bin/bash
+   yum install -y amazon-ssm-agent
+   systemctl enable amazon-ssm-agent
+   systemctl start amazon-ssm-agent
+   EOF
+
   tags = merge(var.tags, {
     Name = "${local.name_prefix}-bastion"
   })
