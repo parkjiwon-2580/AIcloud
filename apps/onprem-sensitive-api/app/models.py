@@ -1,8 +1,6 @@
 from sqlalchemy import Column
-from sqlalchemy import Date
 from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey
-from sqlalchemy import String
 from sqlalchemy import Text
 from sqlalchemy import Uuid
 from sqlalchemy.sql import func
@@ -23,6 +21,7 @@ class SensitiveProfile(Base):
     cloud_user_id = Column(
         Uuid,
         nullable=False,
+        unique=True,
     )
 
     created_at = Column(
@@ -48,17 +47,27 @@ class SensitiveChild(Base):
     )
 
     profile_id = Column(
+        "profiles_id",
         Uuid,
         ForeignKey("ai_care.sensitive_profiles.id"),
         nullable=False,
     )
 
-    child_name = Column(
-        String(50),
+    name_enc = Column(
+        Text,
+        nullable=False,
     )
 
-    child_birth_date = Column(
-        Date,
+    birth_date_enc = Column(
+        Text,
+    )
+
+    gender_enc = Column(
+        Text,
+    )
+
+    detail_json_enc = Column(
+        Text,
     )
 
     created_at = Column(
@@ -86,6 +95,7 @@ class SensitiveConsultation(Base):
     consultation_id = Column(
         Uuid,
         nullable=False,
+        unique=True,
     )
 
     cloud_user_id = Column(
@@ -93,17 +103,12 @@ class SensitiveConsultation(Base):
         nullable=False,
     )
 
-    sensitive_content = Column(
+    raw_enc = Column(
         Text,
+        nullable=False,
     )
 
     created_at = Column(
         DateTime(timezone=True),
         server_default=func.now(),
-    )
-
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
     )

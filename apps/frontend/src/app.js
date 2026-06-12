@@ -574,6 +574,15 @@ document.getElementById("childForm").addEventListener("submit", async (event) =>
 document.getElementById("questionnaireForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const payload = formData(event.currentTarget);
+  if (!payload.childId) {
+    alert("아이를 먼저 선택해 주세요. 아이가 없으면 마이페이지에서 아이 정보를 등록한 뒤 다시 시도해 주세요.");
+    return;
+  }
+  if (!payload.symptomText?.trim()) {
+    alert("증상을 입력해 주세요.");
+    return;
+  }
+
   try {
     const created = await questionnaireApi.create(payload);
     setLastConsultationId(created.consultationId);
@@ -719,10 +728,19 @@ async function showResult(id) {
     }
   });
 
-  document.querySelector("[data-pdf-key]")?.addEventListener("click", (event) => {
+  document.querySelector("[data-pdf-key]")?.addEventListener("click", async (event) => {
     const pdfKey = event.currentTarget.dataset.pdfKey;
     if (!pdfKey) return;
-    alert(`PDF 파일 경로: ${pdfKey}`);
+    try {
+      const payload = await aiApi.reportDownload(id);
+      if (payload?.downloadUrl) {
+        window.open(payload.downloadUrl, "_blank", "noopener");
+        return;
+      }
+      alert("PDF 다운로드 URL이 아직 준비되지 않았습니다.");
+    } catch (error) {
+      alert(`PDF 다운로드를 준비하지 못했습니다. ${friendlyApiError(error, "ai")}`);
+    }
   });
 }
 

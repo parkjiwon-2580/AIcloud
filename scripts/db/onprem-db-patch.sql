@@ -1,0 +1,10 @@
+CREATE SCHEMA IF NOT EXISTS ai_care;
+SET search_path TO ai_care;
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+ALTER TABLE sensitive_children
+  ADD COLUMN IF NOT EXISTS child_gender VARCHAR(20);
+
+GRANT USAGE, CREATE ON SCHEMA ai_care TO secure_admin;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA ai_care TO secure_admin;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA ai_care TO secure_admin;

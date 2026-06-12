@@ -2,12 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { pool } from '../database/postgres';
 import { KiwiService } from '../kiwi/kiwi.service';
 import { BedrockService } from '../bedrock/bedrock.service';
+import { ReportService } from '../report/report.service';
+import { OnpremService } from '../onprem/onprem.service';
 
 @Injectable()
 export class AiService {
   constructor(
     private readonly kiwiService: KiwiService,
     private readonly bedrockService: BedrockService,
+    private readonly reportService: ReportService,
+    private readonly onpremService: OnpremService,
   ) {}
 
   async analyze(
@@ -31,12 +35,16 @@ export class AiService {
       );
     }
 
-    const content =
-      consultation.rows[0]
-        .content_data;
+    const sensitiveConsultation =
+      await this.onpremService.getConsultation(
+        consultationId,
+      );
 
     const text =
-      JSON.stringify(content);
+      this.extractAnalysisText(
+        sensitiveConsultation.rawPayload,
+        consultation.rows[0].content_data,
+      );
 
     const kiwi =
       await this.kiwiService.analyze(
@@ -45,10 +53,17 @@ export class AiService {
 
     const modelResult =
       await this.bedrockService.analyze(
+        text,
         kiwi.tokens,
       );
     const result =
-      this.normalizeModelResult(modelResult);
+      this.toResultObject(
+        this.normalizeModelResult(modelResult),
+      );
+    result.morphology = {
+      mode: kiwi.mode,
+      tokens: kiwi.tokens,
+    };
 
     await pool.query(
       `
@@ -76,7 +91,16 @@ export class AiService {
       ],
     );
 
-    return result;
+    const report = await this.reportService.createAndStore(
+      consultation.rows[0],
+      result,
+    );
+
+    return {
+      ...result,
+      pdfS3Key: report.key,
+      pdfS3Bucket: report.bucket,
+    };
   }
 
   async getResult(
@@ -93,6 +117,22 @@ export class AiService {
       );
 
     return result.rows[0];
+  }
+
+  async getReportDownloadUrl(
+    consultationId: string,
+  ) {
+    return this.reportService.createDownloadUrl(
+      consultationId,
+    );
+  }
+
+  readLocalReport(
+    key: string,
+  ) {
+    return this.reportService.readLocalReport(
+      key,
+    );
   }
 
   async testUsers() {
@@ -145,6 +185,12 @@ async showTables() {
     const possibleDiseases = Array.isArray(raw.possibleDiseases)
       ? raw.possibleDiseases.map(String)
       : [];
+    const symptomFindings = Array.isArray(raw.symptom_findings)
+      ? raw.symptom_findings
+      : Array.isArray(raw.symptomFindings)
+        ? raw.symptomFindings
+        : [];
+    const departmentHint = String(raw.department_hint ?? raw.departmentHint ?? '소아청소년과');
     const recommendation = String(raw.recommendation ?? '');
 
     return {
@@ -165,8 +211,30 @@ async showTables() {
       recommendation,
       emergency: Boolean(raw.emergency),
       possible_diseases: possibleDiseases,
+      risk_reason: raw.risk_reason ?? raw.riskReason ?? '',
+      symptom_findings: symptomFindings,
+      hospital_recommendation:
+        raw.hospital_recommendation ??
+        raw.hospitalRecommendation ??
+        departmentHint,
       disclaimer: '본 결과는 의료진 진단을 대체하지 않는 참고용입니다.',
       model_raw: raw,
+    };
+  }
+
+  private toResultObject(result: unknown): Record<string, unknown> {
+    if (result && typeof result === 'object') {
+      return result as Record<string, unknown>;
+    }
+
+    return {
+      summary_title: 'AI questionnaire report',
+      summary: String(result ?? ''),
+      risk_level: 'UNKNOWN',
+      emergency: false,
+      possible_diseases: [],
+      recommendation: '',
+      model_raw: result,
     };
   }
 
@@ -193,9 +261,36 @@ async showTables() {
     }
 
     try {
-      return JSON.parse(textBlock.text);
+      return JSON.parse(this.extractJsonText(textBlock.text));
     } catch {
       return modelResult;
     }
+  }
+
+  private extractJsonText(text: string): string {
+    const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    if (fenced?.[1]) {
+      return fenced[1].trim();
+    }
+
+    const start = text.indexOf('{');
+    const end = text.lastIndexOf('}');
+    if (start >= 0 && end > start) {
+      return text.slice(start, end + 1);
+    }
+
+    return text;
+  }
+
+  private extractAnalysisText(
+    rawPayload: Record<string, unknown>,
+    contentData: unknown,
+  ): string {
+    const symptomText = rawPayload.symptomText;
+    if (typeof symptomText === 'string' && symptomText.trim()) {
+      return symptomText;
+    }
+
+    return JSON.stringify(contentData ?? rawPayload);
   }
 }

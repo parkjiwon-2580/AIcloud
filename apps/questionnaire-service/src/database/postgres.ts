@@ -13,6 +13,11 @@ function databaseSslConfig(): PoolConfig['ssl'] {
 function databaseConfig(): PoolConfig {
   const connectionString = process.env.DATABASE_URL;
   const ssl = databaseSslConfig();
+
+  console.log('DATABASE_URL=', process.env.DATABASE_URL);
+  console.log('RDS_SSL=', process.env.RDS_SSL);
+  console.log('SSL_CONFIG=', ssl);
+
   if (connectionString) {
     return { connectionString, ssl };
   }
@@ -26,5 +31,7 @@ function databaseConfig(): PoolConfig {
     ssl,
   };
 }
+
+
 
 export const pool = new Pool(databaseConfig());
