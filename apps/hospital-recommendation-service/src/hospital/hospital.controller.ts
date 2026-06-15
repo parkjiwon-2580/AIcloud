@@ -6,8 +6,8 @@ export class HospitalController {
   constructor(private readonly hospitalService: HospitalService) {}
 
   @Get('hospitals/recommend')
-  recommend(@Query('department') department?: string, @Query('region') region?: string) {
-    return this.hospitalService.recommend(department, region);
+  recommend(@Query('department') department?: string, @Query('region') region?: string, @Query('keyword') keyword?: string) {
+    return this.hospitalService.recommend(department, region, keyword);
   }
 
   @Get('health')

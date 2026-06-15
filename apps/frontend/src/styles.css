@@ -542,7 +542,7 @@ button,
 
 .search-panel {
   display: grid;
-  grid-template-columns: minmax(160px, 220px) 1fr auto;
+  grid-template-columns: minmax(150px, 190px) minmax(180px, 1fr) 1fr auto;
   gap: 12px;
   margin-bottom: 28px;
   padding: 16px;
@@ -558,6 +558,45 @@ button,
   background:
     linear-gradient(180deg, rgba(219, 234, 254, 0.55), rgba(255, 255, 255, 0.96)),
     linear-gradient(135deg, #e0f2fe, #ffffff);
+}
+
+.hospital-card-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.open-badge {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 950;
+  padding: 7px 11px;
+}
+
+.open-badge.is-open {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.open-badge.is-closed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.open-badge.is-unknown {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.hospital-link {
+  width: fit-content;
+  color: var(--primary-dark);
+  font-size: 14px;
+  font-weight: 900;
 }
 
 .tab-toolbar {
