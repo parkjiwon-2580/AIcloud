@@ -6,6 +6,9 @@ import { hospitalApi } from "./api/hospital.api.js";
 import { questionnaireApi } from "./api/questionnaire.api.js";
 
 const LAST_CONSULTATION_KEY = "aicloud.lastConsultationId";
+const KAKAO_JS_KEY = "7ed4eb0a52edd0459d28de6073874a34";
+const HOSPITAL_SEARCH_FALLBACK_REGION = "서울 강남구";
+const KAKAO_SEARCH_TIMEOUT_MS = 3500;
 
 const AGE_FILTERS = [
   { label: "전체", value: "전체" },
@@ -749,13 +752,162 @@ document.getElementById("hospitalForm").addEventListener("submit", async (event)
   await loadHospitals(formData(event.currentTarget));
 });
 
-async function loadHospitals(form = { department: "소아청소년과", region: "서울 강남구" }) {
+function kiwiTokenizeHospitalQuery(text) {
+  return String(text || "")
+    .normalize("NFKC")
+    .replace(/[{}[\]":,]/g, " ")
+    .split(/[\s/|·,]+/)
+    .map((token) => token.trim())
+    .filter((token) => token.length > 0);
+}
+
+function normalizeHospitalKeyword(keyword) {
+  const tokens = kiwiTokenizeHospitalQuery(keyword);
+  const compact = tokens.join("");
+  const source = `${tokens.join(" ")} ${compact}`;
+
+  if (/소아|아기|아이|영유아|어린이/.test(source)) return "소아청소년과";
+  if (/이비인후|귀|코|목|중이염|비염/.test(source)) return "이비인후과";
+  if (/피부|발진|두드러기|아토피/.test(source)) return "피부과";
+  if (/응급|야간|심야/.test(source)) return "응급실";
+
+  return tokens[0] || "소아청소년과";
+}
+
+function loadKakaoPlaces() {
+  if (window.kakao?.maps?.services?.Places) {
+    return Promise.resolve(window.kakao.maps.services);
+  }
+
+  return new Promise((resolve, reject) => {
+    const existingScript = document.querySelector("script[data-kakao-sdk]");
+    const script = existingScript || document.createElement("script");
+
+    const onReady = () => {
+      if (!window.kakao?.maps?.load) {
+        reject(new Error("카카오 지도 SDK가 현재 도메인에서 활성화되지 않았습니다."));
+        return;
+      }
+      window.kakao.maps.load(() => {
+        if (window.kakao?.maps?.services?.Places) {
+          resolve(window.kakao.maps.services);
+          return;
+        }
+        reject(new Error("카카오 장소 검색 라이브러리를 불러오지 못했습니다."));
+      });
+    };
+
+    if (!existingScript) {
+      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=services&autoload=false`;
+      script.async = true;
+      script.dataset.kakaoSdk = "true";
+    }
+
+    script.addEventListener("load", onReady, { once: true });
+    script.addEventListener("error", () => reject(new Error("카카오 지도 SDK를 불러오지 못했습니다.")));
+
+    if (existingScript && script.dataset.loaded === "true") {
+      onReady();
+      return;
+    }
+
+    script.addEventListener("load", () => {
+      script.dataset.loaded = "true";
+    }, { once: true });
+
+    if (!existingScript) document.head.appendChild(script);
+  });
+}
+
+function withTimeout(promise, timeoutMs, timeoutMessage) {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => {
+      window.setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+    }),
+  ]);
+}
+
+function searchKakaoHospitals(query) {
+  return loadKakaoPlaces().then(
+    (services) =>
+      new Promise((resolve, reject) => {
+        const places = new services.Places();
+        places.keywordSearch(query, (data, status) => {
+          if (status === services.Status.OK) {
+            resolve(data.slice(0, 9).map((item, index) => normalizeKakaoHospital(item, index)));
+            return;
+          }
+          if (status === services.Status.ZERO_RESULT) {
+            resolve([]);
+            return;
+          }
+          reject(new Error("카카오 장소 검색에 실패했습니다."));
+        });
+      }),
+  );
+}
+
+function normalizeKakaoHospital(item, index) {
+  const openingHours = item.opening_hours || item.openingHours || item.business_hours || "영업시간 확인 필요";
+  const rawOpen = item.is_open ?? item.isOpen ?? item.open ?? item.business_status;
+  const isOpen =
+    typeof rawOpen === "boolean"
+      ? rawOpen
+      : typeof rawOpen === "string"
+        ? /영업중|open|operating/i.test(rawOpen)
+        : null;
+
+  return {
+    name: item.place_name,
+    distance: item.distance ? `${(Number(item.distance) / 1000).toFixed(1)}km` : `${index + 1}번째 결과`,
+    openingHours,
+    isOpen,
+    address: item.road_address_name || item.address_name || "",
+    department: item.category_name || "병원",
+    phone: item.phone || "",
+    url: item.place_url || "",
+  };
+}
+
+function renderOpenBadge(isOpen) {
+  if (isOpen === true) return '<span class="open-badge is-open">영업중</span>';
+  if (isOpen === false) return '<span class="open-badge is-closed">영업 종료</span>';
+  return '<span class="open-badge is-unknown">확인 필요</span>';
+}
+
+async function loadHospitals(form = { department: "소아청소년과", keyword: "", region: HOSPITAL_SEARCH_FALLBACK_REGION }) {
+  const keyword = String(form.keyword || "").trim();
+  const department = normalizeHospitalKeyword(form.department || keyword || "소아청소년과");
+  const region = String(form.region || HOSPITAL_SEARCH_FALLBACK_REGION).trim();
+  const query = `${region} ${keyword || department} 병원`;
   let hospitals = [];
+  renderNotice("hospitalList", "병원을 검색하고 있습니다", `${query} 기준으로 조회 중입니다.`);
   try {
-    hospitals = await hospitalApi.recommend(form);
-  } catch (error) {
-    renderNotice("hospitalList", "병원 추천을 불러올 수 없습니다", friendlyApiError(error, "hospital"));
-    return;
+    hospitals = await hospitalApi.recommend({ department, keyword, region });
+  } catch (apiError) {
+    try {
+      hospitals = await withTimeout(
+        searchKakaoHospitals(query),
+        KAKAO_SEARCH_TIMEOUT_MS,
+        "카카오 장소 검색 응답이 지연되고 있습니다.",
+      );
+    } catch (error) {
+      renderNotice("hospitalList", "병원 추천을 불러올 수 없습니다", `${friendlyApiError(apiError, "hospital")} ${error.message}`);
+      return;
+    }
+  }
+
+  if (!hospitals.length) {
+    try {
+      hospitals = await withTimeout(
+        searchKakaoHospitals(query),
+        KAKAO_SEARCH_TIMEOUT_MS,
+        "카카오 장소 검색 응답이 지연되고 있습니다.",
+      );
+    } catch {
+      hospitals = [];
+    }
   }
 
   if (!hospitals.length) {
@@ -767,11 +919,15 @@ async function loadHospitals(form = { department: "소아청소년과", region: 
     .map(
       (hospital) => `
         <article class="hospital-card">
-          <span class="badge-soft">${escapeHtml(hospital.distance || "거리 확인 필요")}</span>
+          <div class="hospital-card-head">
+            <span class="badge-soft">${escapeHtml(hospital.distance || "거리 확인 필요")}</span>
+            ${renderOpenBadge(hospital.isOpen)}
+          </div>
           <strong>${escapeHtml(hospital.name)}</strong>
           <small>${escapeHtml(hospital.address || "")}</small>
-          <small>${escapeHtml(hospital.openingHours || "운영시간 확인 필요")}</small>
-          <span class="risk-badge ${hospital.isOpen ? "low" : "medium"}">${hospital.isOpen ? "진료 중" : "확인 필요"}</span>
+          <small>${escapeHtml(hospital.openingHours || "영업시간 확인 필요")}</small>
+          ${hospital.phone ? `<small>${escapeHtml(hospital.phone)}</small>` : ""}
+          ${hospital.url ? `<a class="hospital-link" href="${escapeHtml(hospital.url)}" target="_blank" rel="noopener">카카오맵에서 상세보기</a>` : ""}
         </article>
       `,
     )

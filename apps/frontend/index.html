@@ -40,7 +40,6 @@
                 <input type="checkbox" />
                 로그인 상태 유지
               </label>
-              <span class="text-link muted">비밀번호 찾기</span>
             </div>
             <button class="primary-button" type="submit">로그인</button>
           </form>
@@ -191,11 +190,16 @@
             <p class="subtle">추천 진료과와 지역을 기준으로 주변 병원을 조회합니다. 추천 결과는 DB에 저장하지 않습니다.</p>
           </header>
           <form class="search-panel" id="hospitalForm">
-            <select name="department">
+            <select name="department" aria-label="진료과 선택">
               <option value="소아청소년과">소아청소년과</option>
+              <option value="응급실">응급실</option>
               <option value="이비인후과">이비인후과</option>
               <option value="피부과">피부과</option>
+              <option value="내과">내과</option>
+              <option value="정형외과">정형외과</option>
+              <option value="">전체 병원</option>
             </select>
+            <input name="keyword" placeholder="병원명 또는 검색어 예: 아산키즈, 응급실" />
             <input name="region" placeholder="지역 예: 서울 강남구" />
             <button class="primary-button" type="submit">검색</button>
           </form>
