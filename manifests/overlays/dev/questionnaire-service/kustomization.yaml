@@ -13,4 +13,4 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/questionnaire-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/questionnaire-service
-  newTag: d487f60501bfa49d91d8b8693376188f9a4dddf6
+  newTag: e22552f306dc80d3bb2924295579151e85a21d19
