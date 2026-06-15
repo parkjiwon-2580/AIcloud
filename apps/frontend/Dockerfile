@@ -19,6 +19,7 @@ FROM nginx:alpine
 # 🚨 주의: Vite는 'dist', Create React App은 'build' 폴더를 생성합니다. 
 # 프로젝트에 맞게 아래 경로의 /app/dist 부분을 /app/build 등으로 수정할 수 있습니다.
 COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # 컨테이너 포트 80 개방 (k8s deployment의 포트와 일치시킴)
 EXPOSE 80

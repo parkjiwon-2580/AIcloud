@@ -62,6 +62,11 @@ export class OnpremService {
     );
   }
 
+  async deleteChild(childId: string) {
+    const path = `/internal/sensitive/children/${childId}`;
+    return this.request(path, () => this.client.delete(path));
+  }
+
   private async post(path: string, body: Record<string, unknown>) {
     return this.request(path, () => this.client.post(path, body));
   }

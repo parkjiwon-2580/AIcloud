@@ -24,7 +24,7 @@ with engine.begin() as connection:
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Ai클라우드 onprem-sensitive-api")
+app = FastAPI(title="aicare onprem-sensitive-api")
 
 
 class ProfileRequest(BaseModel):
@@ -175,6 +175,20 @@ def update_child(
     db.commit()
     db.refresh(child)
     return {"sensitive_child_id": child.id}
+
+
+@app.delete("/internal/sensitive/children/{child_id}")
+def delete_child(
+    child_id: UUID,
+    db: Session = Depends(get_db),
+):
+    child = db.query(SensitiveChild).filter(SensitiveChild.id == child_id).first()
+    if not child:
+        raise HTTPException(status_code=404, detail="Child not found")
+
+    db.delete(child)
+    db.commit()
+    return {"sensitive_child_id": child_id, "status": "deleted"}
 
 
 @app.post("/internal/sensitive/consultation")

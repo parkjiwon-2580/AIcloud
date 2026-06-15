@@ -48,4 +48,10 @@ export const authApi = {
       body: payload,
     });
   },
+
+  deleteChild(childId) {
+    return request("auth", `/me/children/${encodeURIComponent(childId)}`, {
+      method: "DELETE",
+    });
+  },
 };
