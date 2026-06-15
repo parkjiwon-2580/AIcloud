@@ -21,128 +21,6 @@ const AGE_FILTERS = [
 
 const INFO_CATEGORIES = ["예방접종", "주의사항", "발달", "영양", "질환정보", "응급징후", "공지"];
 
-const SAMPLE_INFO_POSTS = [
-  {
-    id: "sample-emergency-all",
-    category: "응급징후",
-    targetAgeMonths: "전체",
-    title: "바로 진료가 필요한 증상",
-    content:
-      "고열이 지속되거나 호흡이 힘들어 보임, 경련, 의식 저하, 탈수 증상이 의심되는 경우에는 지체하지 말고 의료기관에 문의하거나 진료를 받는 것이 좋습니다.",
-    viewCount: 311,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-ai-notice-all",
-    category: "주의사항",
-    targetAgeMonths: "전체",
-    title: "AI 결과는 참고용입니다",
-    content:
-      "Ai클라우드의 문진 결과는 병원 방문 전 증상 정리를 돕기 위한 참고용이며, 의료진의 진단을 대체하지 않습니다.",
-    viewCount: 212,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-vaccine-0-6",
-    category: "예방접종",
-    targetAgeMonths: "0-6",
-    title: "생후 초기 예방접종 체크",
-    content:
-      "생후 초기에는 여러 예방접종 일정이 포함될 수 있습니다. 접종 시기와 차수는 아이의 출생일과 이전 접종 이력에 따라 달라질 수 있으므로, 질병관리청 예방접종도우미 또는 의료기관 안내를 확인하세요.",
-    viewCount: 128,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-fever-0-6",
-    category: "주의사항",
-    targetAgeMonths: "0-6",
-    title: "생후 초기 발열 시 주의",
-    content:
-      "어린 영아의 발열은 보호자가 임의로 판단하기보다 아이의 컨디션, 수유량, 호흡 상태를 함께 관찰하고 필요 시 의료기관에 문의하는 것이 좋습니다.",
-    viewCount: 143,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-food-7-12",
-    category: "영양",
-    targetAgeMonths: "7-12",
-    title: "이유식 시작 시 확인할 점",
-    content:
-      "새로운 음식을 시작할 때는 한 번에 여러 가지를 섞기보다 하나씩 천천히 시도하면서 발진, 구토, 설사 등 이상 반응을 관찰하는 것이 좋습니다.",
-    viewCount: 117,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-crawling-7-12",
-    category: "발달",
-    targetAgeMonths: "7-12",
-    title: "기어다니기 시기 안전관리",
-    content:
-      "아이가 기어다니기 시작하면 작은 물건 삼킴, 콘센트, 모서리, 낙상 위험을 줄이기 위해 생활 공간을 점검하는 것이 좋습니다.",
-    viewCount: 96,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-walk-13-24",
-    category: "발달",
-    targetAgeMonths: "13-24",
-    title: "걷기 시작 시기 안전관리",
-    content:
-      "걷기 시작하면 낙상과 충돌 위험이 늘어납니다. 미끄럼 방지, 모서리 보호, 계단 접근 차단 등 실내 안전 환경을 점검하세요.",
-    viewCount: 88,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-infection-13-24",
-    category: "주의사항",
-    targetAgeMonths: "13-24",
-    title: "감염 증상 관찰하기",
-    content:
-      "외부 활동이 늘어나면 감기, 장염 등 감염 증상이 나타날 수 있습니다. 열, 수분 섭취, 소변량, 활동성을 함께 관찰하세요.",
-    viewCount: 122,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-toilet-25-36",
-    category: "발달",
-    targetAgeMonths: "25-36",
-    title: "배변훈련 준비하기",
-    content:
-      "배변훈련은 아이의 준비 상태에 따라 천천히 진행하는 것이 좋습니다. 실패를 혼내기보다 반복적인 루틴을 만들어주는 것이 도움이 됩니다.",
-    viewCount: 73,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-burn-25-36",
-    category: "주의사항",
-    targetAgeMonths: "25-36",
-    title: "화상과 삼킴 사고 예방",
-    content: "뜨거운 음식, 전기포트, 작은 장난감, 동전, 약품은 아이 손이 닿지 않는 곳에 보관하세요.",
-    viewCount: 104,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-daycare-37-60",
-    category: "질환정보",
-    targetAgeMonths: "37-60",
-    title: "어린이집 감염질환 주의",
-    content:
-      "단체 생활을 하면서 감기, 수족구, 장염 등 감염질환 노출이 늘 수 있습니다. 손씻기와 개인 물품 관리가 중요합니다.",
-    viewCount: 156,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-  {
-    id: "sample-language-37-60",
-    category: "발달",
-    targetAgeMonths: "37-60",
-    title: "언어와 사회성 관찰",
-    content:
-      "또래와의 상호작용, 말하기, 감정 표현이 활발해지는 시기입니다. 발달에 대한 걱정이 있다면 전문기관이나 의료진 상담을 고려할 수 있습니다.",
-    viewCount: 81,
-    createdAt: "2026-05-26T00:00:00.000Z",
-  },
-];
-
 const state = {
   adminPosts: [],
   children: [],
@@ -281,21 +159,6 @@ function normalizeInfoPost(post) {
     viewCount: post.viewCount ?? post.view_count ?? 0,
     createdAt: post.createdAt || post.created_at,
   };
-}
-
-function samplePostsForAge(targetAgeMonths = "전체") {
-  const target = normalizeAgeValue(targetAgeMonths);
-  return SAMPLE_INFO_POSTS.filter(
-    (post) => target === "전체" || normalizeAgeValue(post.targetAgeMonths) === "전체" || normalizeAgeValue(post.targetAgeMonths) === target,
-  );
-}
-
-function mergeInfoPosts(apiPosts, samplePosts) {
-  const apiPostKeys = new Set(apiPosts.map((post) => `${post.category}:${post.targetAgeMonths}:${post.title}`));
-  const uniqueSamples = samplePosts.filter(
-    (post) => !apiPostKeys.has(`${post.category}:${normalizeAgeValue(post.targetAgeMonths)}:${post.title}`),
-  );
-  return [...apiPosts, ...uniqueSamples];
 }
 
 function routeName() {
@@ -967,34 +830,25 @@ function renderAgeFilter() {
 
 async function loadInfo(targetAgeMonths = "전체") {
   const normalizedTargetAgeMonths = normalizeAgeValue(targetAgeMonths);
-  let remotePosts = [];
   let posts = [];
-  let fallbackMessage = "";
   try {
-    remotePosts = (await boardApi.posts({ targetAgeMonths: normalizedTargetAgeMonths })).map(normalizeInfoPost);
+    posts = (await boardApi.posts({ targetAgeMonths: normalizedTargetAgeMonths })).map(normalizeInfoPost);
   } catch (error) {
-    fallbackMessage = `서비스 연결이 원활하지 않아 로컬 샘플 콘텐츠를 보여줍니다. ${friendlyApiError(error, "board")}`;
-  }
-
-  const samplePosts = samplePostsForAge(normalizedTargetAgeMonths).map(normalizeInfoPost);
-  posts = mergeInfoPosts(remotePosts, samplePosts);
-
-  if (!remotePosts.length && !fallbackMessage && samplePosts.length) {
-    fallbackMessage = "등록된 콘텐츠가 없어 로컬 샘플 콘텐츠를 보여줍니다.";
+    const fallback = document.getElementById("infoFallbackNotice");
+    if (fallback) fallback.hidden = true;
+    renderNotice("infoList", "정보공유 글을 불러올 수 없습니다", friendlyApiError(error, "board"));
+    return;
   }
 
   if (!posts.length) {
+    const fallback = document.getElementById("infoFallbackNotice");
+    if (fallback) fallback.hidden = true;
     renderNotice("infoList", "등록된 정보가 없습니다", "관리자 콘텐츠가 등록되면 월령별로 표시됩니다.");
     return;
   }
 
   const fallback = document.getElementById("infoFallbackNotice");
-  if (fallback && fallbackMessage) {
-    fallback.textContent = fallbackMessage;
-    fallback.hidden = false;
-  } else if (fallback) {
-    fallback.hidden = true;
-  }
+  if (fallback) fallback.hidden = true;
 
   state.infoPosts = posts;
   document.getElementById("infoList").innerHTML = INFO_CATEGORIES.map((category) => {
@@ -1051,9 +905,8 @@ function bindInfoButtons() {
 }
 
 async function loadInfoDetail(id) {
-  const sample = state.infoPosts.find((post) => post.id === id && String(post.id).startsWith("sample-"));
   try {
-    const post = sample || normalizeInfoPost(await boardApi.post(id));
+    const post = normalizeInfoPost(await boardApi.post(id));
     document.getElementById("infoDetail").innerHTML = `
       <div class="guide-badges">
         <span class="age-badge">${escapeHtml(ageLabel(post.targetAgeMonths))}</span>
