@@ -358,13 +358,13 @@ variable "cloudwatch_log_retention_days" {
 variable "backend_service_account_namespace" {
   description = "Backend Kubernetes service account namespace for IRSA."
   type        = string
-  default     = "default"
+  default     = "service"
 }
 
 variable "backend_service_account_name" {
   description = "Backend Kubernetes service account name for IRSA."
   type        = string
-  default     = "backend"
+  default     = "dev-backend"
 }
 
 variable "create_ai_processor_lambda" {
