@@ -53,9 +53,6 @@ export class BedrockService {
         maxTokens: this.maxTokens,
         stopSequences: [],
       },
-      additionalModelRequestFields: {
-        top_k: 250,
-      },
     });
 
     try {
@@ -83,8 +80,10 @@ export class BedrockService {
             ? (error as { $metadata?: unknown }).$metadata
             : undefined,
       });
+      const message = error instanceof Error ? error.message : String(error);
+      const name = error instanceof Error ? error.name : 'BedrockError';
       throw new BadGatewayException(
-        `Bedrock converse failed for model ${this.modelId}`,
+        `Bedrock converse failed for model ${this.modelId}: ${name}: ${message}`,
       );
     }
   }
