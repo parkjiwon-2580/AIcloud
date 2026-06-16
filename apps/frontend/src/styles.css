@@ -1022,16 +1022,29 @@ button:disabled {
 
 .post-image-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(96px, 160px));
   gap: 8px;
+  align-items: start;
+  justify-content: start;
+  max-width: 520px;
 }
 
 .post-image-strip img {
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: 12px;
+  max-height: 120px;
+  border-radius: 8px;
   object-fit: cover;
   background: #eef4fb;
+}
+
+.info-detail .post-image-strip {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 180px));
+  max-width: 580px;
+}
+
+.info-detail .post-image-strip img {
+  max-height: 135px;
 }
 
 .todo-grid {
