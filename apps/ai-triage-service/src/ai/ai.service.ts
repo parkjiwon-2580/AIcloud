@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { pool } from '../database/postgres';
-import { KiwiService } from '../kiwi/kiwi.service';
 import { BedrockService } from '../bedrock/bedrock.service';
 import { ReportService } from '../report/report.service';
 import { OnpremService } from '../onprem/onprem.service';
@@ -8,7 +7,6 @@ import { OnpremService } from '../onprem/onprem.service';
 @Injectable()
 export class AiService {
   constructor(
-    private readonly kiwiService: KiwiService,
     private readonly bedrockService: BedrockService,
     private readonly reportService: ReportService,
     private readonly onpremService: OnpremService,
@@ -41,24 +39,14 @@ export class AiService {
         consultation.rows[0],
       );
 
-    const kiwi =
-      await this.kiwiService.analyze(
-        text,
-      );
-
     const modelResult =
       await this.bedrockService.analyze(
         text,
-        kiwi.tokens,
       );
     const result =
       this.toResultObject(
         this.normalizeModelResult(modelResult),
       );
-    result.morphology = {
-      mode: kiwi.mode,
-      tokens: kiwi.tokens,
-    };
 
     await pool.query(
       `
