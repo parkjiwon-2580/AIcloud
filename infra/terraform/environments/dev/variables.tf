@@ -435,3 +435,8 @@ variable "cluster_name" {
   type    = string
   default = "ai-care-dev-eks"
 }
+
+variable "enable_karpenter" {
+  type    = bool
+  default = false
+}

@@ -1,0 +1,17 @@
+{
+  "Changes": [
+    {
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "_5e951666a9d27f30d4080c9d4f56f804.aicare.art",
+        "Type": "CNAME",
+        "TTL": 300,
+        "ResourceRecords": [
+          {
+            "Value": "_573b1b813bec5cd06dc39b2bad35d3ca.jkddzztszm.acm-validations.aws"
+          }
+        ]
+      }
+    }
+  ]
+}
