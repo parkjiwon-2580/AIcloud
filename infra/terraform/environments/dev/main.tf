@@ -356,6 +356,7 @@ module "k8s" {
 
 module "karpenter" {
   source = "../../modules/karpenter"
+  count  = var.enable_karpenter ? 1 : 0
 
   cluster_name          = var.cluster_name
   eks_oidc_provider_arn = module.eks.eks_oidc_provider_arn
@@ -363,4 +364,8 @@ module "karpenter" {
   eks_node_role_name    = module.eks.eks_node_role_name
 
   tags = local.common_tags
+}
+
+resource "aws_route53_zone" "main" {
+  name = "aicare.art"
 }
