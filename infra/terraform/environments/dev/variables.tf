@@ -343,6 +343,30 @@ variable "reports_s3_prefix" {
   default     = "reports/"
 }
 
+variable "domain_name" {
+  description = "Root domain name managed by Route 53."
+  type        = string
+  default     = "aicare.art"
+}
+
+variable "frontend_domain_names" {
+  description = "Frontend domain names covered by the ACM certificate."
+  type        = list(string)
+  default     = ["aicare.art", "www.aicare.art"]
+}
+
+variable "frontend_alb_dns_name" {
+  description = "Optional frontend ALB DNS name for Route 53 alias records. Leave empty until the Kubernetes Ingress ALB exists."
+  type        = string
+  default     = ""
+}
+
+variable "frontend_alb_zone_id" {
+  description = "Optional frontend ALB hosted zone ID for Route 53 alias records."
+  type        = string
+  default     = ""
+}
+
 variable "reports_bucket_force_destroy" {
   description = "Whether to force destroy the reports S3 bucket."
   type        = bool
