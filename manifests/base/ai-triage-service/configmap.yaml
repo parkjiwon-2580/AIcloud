@@ -9,7 +9,9 @@ data:
   LOG_LEVEL: "INFO"
   TZ: "Asia/Seoul"
   AWS_REGION: "ap-northeast-2"
-  BEDROCK_MODEL_ID: "arn:aws:bedrock:ap-northeast-2:105959916837:inference-profile/global.anthropic.claude-haiku-4-5-20251001-v1:0"
+  BEDROCK_MODEL_ID: "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+  BEDROCK_MOCK: "false"
+  BEDROCK_FALLBACK_TO_MOCK: "false"
   # S3 설정
   S3_BUCKET_NAME: "ai-care-dev-reports-105959916837"
   S3_REPORT_PREFIX: "reports/"
