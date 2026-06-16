@@ -6,7 +6,9 @@ locals {
   name_prefix                 = "${var.project_name}-${var.environment}"
   reports_bucket_name         = var.reports_bucket_name != "" ? var.reports_bucket_name : "${local.name_prefix}-reports-${data.aws_caller_identity.current.account_id}"
   reports_s3_prefix           = var.reports_s3_prefix == "" ? "" : "${trimsuffix(var.reports_s3_prefix, "/")}/"
+  board_images_s3_prefix      = var.board_images_s3_prefix == "" ? "" : "${trimsuffix(var.board_images_s3_prefix, "/")}/"
   reports_object_arn          = "${aws_s3_bucket.reports.arn}/${local.reports_s3_prefix}*"
+  board_images_object_arn     = "${aws_s3_bucket.reports.arn}/${local.board_images_s3_prefix}*"
   reports_origin_id           = "${local.name_prefix}-reports-origin"
   oidc_provider_hostpath      = replace(var.eks_oidc_issuer_url, "https://", "")
   backend_log_group_name      = "/${var.project_name}/${var.environment}/backend"
@@ -113,6 +115,18 @@ resource "aws_s3_bucket_ownership_controls" "reports" {
 
   rule {
     object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_cors_configuration" "reports" {
+  bucket = aws_s3_bucket.reports.id
+
+  cors_rule {
+    allowed_headers = ["*"]
+    allowed_methods = ["GET", "HEAD", "PUT"]
+    allowed_origins = var.reports_bucket_cors_allowed_origins
+    expose_headers  = ["ETag"]
+    max_age_seconds = 3000
   }
 }
 
@@ -280,7 +294,7 @@ data "aws_iam_policy_document" "backend" {
     sid       = "ReportsObjectAccess"
     effect    = "Allow"
     actions   = ["s3:PutObject", "s3:GetObject"]
-    resources = [local.reports_object_arn]
+    resources = [local.reports_object_arn, local.board_images_object_arn]
   }
 
   # Do not send direct identifiers to Bedrock. The application layer must

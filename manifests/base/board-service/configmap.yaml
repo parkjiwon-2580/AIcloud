@@ -11,7 +11,7 @@ data:
   AWS_REGION: "ap-northeast-2"
   # 실제 S3 인프라 설정 반영
   S3_BUCKET_NAME: "ai-care-dev-reports-105959916837"
-  S3_BOARD_IMAGE_PREFIX: "reports/"
+  S3_BOARD_IMAGE_PREFIX: "board-images/"
   S3_PRESIGNED_URL_EXPIRE_SECONDS: "300"
   # 실제 RDS 인프라 설정 반영 (DB 이름: aicare)
   RDS_HOST: "ai-care-dev-postgres.czeumgqsmwh8.ap-northeast-2.rds.amazonaws.com"
