@@ -346,7 +346,7 @@ variable "reports_s3_prefix" {
 variable "board_images_bucket_name" {
   description = "Existing S3 bucket name for board image uploads."
   type        = string
-  default     = "ai-care-dev-board-105959916837"
+  default     = "ai-care-dev-image-105959916837"
 }
 
 variable "board_images_s3_prefix" {
