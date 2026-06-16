@@ -1184,10 +1184,11 @@ document.getElementById("adminPostForm").addEventListener("submit", async (event
   }
 });
 
-document.querySelector('#adminPostForm input[name="images"]').addEventListener("change", async (event) => {
+document.querySelector('#adminPostForm input[name="images"]')?.addEventListener("change", async (event) => {
+  const input = event.currentTarget;
   try {
-    await uploadAdminPostImages(event.currentTarget.files);
-    event.currentTarget.value = "";
+    await uploadAdminPostImages(input.files);
+    input.value = "";
   } catch (error) {
     alert(`이미지를 업로드하지 못했습니다. ${friendlyApiError(error, "board")}`);
   }
