@@ -14,7 +14,9 @@ data:
   S3_REPORT_PREFIX: "reports/"
   S3_PRESIGNED_URL_EXPIRE_SECONDS: "300"
   REPORT_FONT_PATH: ""
-  KIWI_URL: "http://172.16.10.10:9000"
+  KIWI_URL: ""
+  ONPREM_API_BASE_URL: "http://172.16.10.10:9000"
+  ONPREM_API_TIMEOUT_MS: "10000"
   # RDS 접속 정보 (비밀번호는 Secret에서 관리)
   RDS_HOST: "ai-care-dev-postgres.czeumgqsmwh8.ap-northeast-2.rds.amazonaws.com"
   RDS_PORT: "5432"

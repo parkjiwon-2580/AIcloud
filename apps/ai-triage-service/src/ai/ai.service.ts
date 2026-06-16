@@ -35,15 +35,10 @@ export class AiService {
       );
     }
 
-    const sensitiveConsultation =
-      await this.onpremService.getConsultation(
-        consultationId,
-      );
-
     const text =
-      this.extractAnalysisText(
-        sensitiveConsultation.rawPayload,
-        consultation.rows[0].content_data,
+      await this.analysisText(
+        consultationId,
+        consultation.rows[0],
       );
 
     const kiwi =
@@ -292,5 +287,31 @@ async showTables() {
     }
 
     return JSON.stringify(contentData ?? rawPayload);
+  }
+
+  private async analysisText(
+    consultationId: string,
+    consultation: Record<string, unknown>,
+  ): Promise<string> {
+    try {
+      const sensitiveConsultation =
+        await this.onpremService.getConsultation(
+          consultationId,
+        );
+
+      return this.extractAnalysisText(
+        sensitiveConsultation.rawPayload,
+        consultation.content_data,
+      );
+    } catch (error) {
+      console.warn('Falling back to RDS consultation metadata for analysis', {
+        consultationId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return this.extractAnalysisText(
+        {},
+        consultation.content_data ?? consultation.symptom_summary,
+      );
+    }
   }
 }
