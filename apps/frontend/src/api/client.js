@@ -16,6 +16,7 @@ const DEFAULT_BASE_URLS = {
   board: "",
   hospital: "",
 };
+
 // const DEFAULT_BASE_URLS = {
 //   auth: "http://localhost:8081",
 //   questionnaire: "http://localhost:8082",
@@ -50,10 +51,27 @@ function fromLocalStorage(key) {
   }
 }
 
+function normalizeStoredBaseUrl(service, value) {
+  const fallback = DEFAULT_BASE_URLS[service];
+  const normalized = String(value || "").replace(/\/$/, "");
+  const sameOrigin = typeof window !== "undefined" ? window.location.origin.replace(/\/$/, "") : "";
+
+  if (!normalized || normalized === sameOrigin) {
+    try {
+      window.localStorage.removeItem(STORAGE_KEYS[service]);
+    } catch {
+      // Ignore storage cleanup failures.
+    }
+    return "";
+  }
+
+  return normalized || fallback;
+}
+
 function resolveBaseUrl(service) {
   const envKey = ENV_KEYS[service];
   const value =
-    fromLocalStorage(STORAGE_KEYS[service]) ||
+    normalizeStoredBaseUrl(service, fromLocalStorage(STORAGE_KEYS[service])) ||
     runtimeConfig[envKey] ||
     viteEnv[envKey] ||
     DEFAULT_BASE_URLS[service];

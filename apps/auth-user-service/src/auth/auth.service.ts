@@ -96,6 +96,12 @@ export class AuthService implements OnModuleDestroy {
     return { childId, status: 'updated', cloudUserId: user.id };
   }
 
+  async deleteChild(authorization: string | undefined, childId: string) {
+    const user = this.requireUser(authorization);
+    await this.onprem.deleteChild(childId);
+    return { childId, status: 'deleted', cloudUserId: user.id };
+  }
+
   requireUser(authorization?: string): AuthUser {
     if (!authorization?.startsWith('Bearer ')) {
       throw new UnauthorizedException('Authentication required');

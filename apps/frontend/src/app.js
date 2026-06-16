@@ -60,7 +60,7 @@ function populateBirthdatePickers() {
   const yearOptions = document.getElementById("birthYearOptions");
   const currentYear = new Date().getFullYear();
   if (yearOptions) {
-    yearOptions.innerHTML = Array.from({ length: 27 }, (_, index) => currentYear - index)
+    yearOptions.innerHTML = Array.from({ length: Math.max(currentYear - 2020 + 1, 1) }, (_, index) => currentYear - index)
       .map((year) => `<option value="${year}"></option>`)
       .join("");
   }
@@ -115,6 +115,24 @@ function populateBirthdatePickers() {
     daySelect.addEventListener("change", syncValue);
     syncDays();
   });
+}
+
+function setBirthdatePickerValue(form, fieldName, value) {
+  const hiddenInput = form.elements[fieldName];
+  const picker = hiddenInput?.parentElement?.querySelector("[data-birthdate-picker]");
+  if (!hiddenInput || !picker) return;
+
+  const [year = "", month = "", day = ""] = String(value || "").split("-");
+  const yearInput = picker.querySelector('[data-birthdate-part="year"]');
+  const monthSelect = picker.querySelector('[data-birthdate-part="month"]');
+  const daySelect = picker.querySelector('[data-birthdate-part="day"]');
+
+  yearInput.value = year;
+  monthSelect.value = month;
+  monthSelect.dispatchEvent(new Event("change"));
+  daySelect.value = day;
+  daySelect.dispatchEvent(new Event("change"));
+  hiddenInput.value = value || "";
 }
 
 function formatDateTime(value) {
@@ -208,6 +226,12 @@ function normalizeChild(child) {
   };
 }
 
+function genderLabel(value) {
+  if (value === "male") return "남자아이";
+  if (value === "female") return "여자아이";
+  return value || "성별 미기재";
+}
+
 function childOptionMarkup(children, includeAll = false) {
   if (!children.length) {
     return includeAll
@@ -217,7 +241,7 @@ function childOptionMarkup(children, includeAll = false) {
 
   const firstOption = includeAll ? '<option value="">전체 아이</option>' : '<option value="">아이 선택</option>';
   return `${firstOption}${children
-    .map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)} (${escapeHtml(child.gender || "성별 미기재")})</option>`)
+    .map((child) => `<option value="${escapeHtml(child.id)}">${escapeHtml(child.name)} (${escapeHtml(genderLabel(child.gender))})</option>`)
     .join("")}`;
 }
 
@@ -235,9 +259,13 @@ function renderChildren(targetId, children) {
     .map(
       (child) => `
         <article class="child-card">
+          ${
+            canEdit
+              ? `<button class="text-danger-button" data-child-delete="${escapeHtml(child.id)}" type="button">삭제</button>`
+              : ""
+          }
           <strong>${escapeHtml(child.name)}</strong>
-          <small>${escapeHtml(child.birthDate || "생년월일 미기재")} · ${escapeHtml(child.gender || "성별 미기재")}</small>
-          <span class="badge-soft">${escapeHtml(child.id)}</span>
+          <small>${escapeHtml(child.birthDate || "생년월일 미기재")} · ${escapeHtml(genderLabel(child.gender))}</small>
           ${
             canEdit
               ? `<button class="ghost-button slim" data-child-edit="${escapeHtml(child.id)}" type="button">수정</button>`
@@ -251,6 +279,9 @@ function renderChildren(targetId, children) {
   if (canEdit) {
     document.querySelectorAll("[data-child-edit]").forEach((button) => {
       button.addEventListener("click", () => updateChild(button.dataset.childEdit));
+    });
+    document.querySelectorAll("[data-child-delete]").forEach((button) => {
+      button.addEventListener("click", () => deleteChild(button.dataset.childDelete));
     });
   }
 }
@@ -332,19 +363,31 @@ async function updateChild(childId) {
   const child = state.children.find((item) => item.id === childId);
   if (!child) return;
 
-  const name = prompt("아이 이름", child.name);
-  if (name === null) return;
-  const birthDate = prompt("아이의 생년월일(YYYY-MM-DD)", child.birthDate);
-  if (birthDate === null) return;
-  const gender = prompt("성별(male/female)", child.gender || "male");
-  if (gender === null) return;
+  const modal = document.getElementById("childEditModal");
+  const form = document.getElementById("childEditForm");
+  form.elements.childId.value = child.id;
+  form.elements.name.value = child.name || "";
+  form.elements.gender.value = child.gender || "male";
+  setBirthdatePickerValue(form, "birthDate", child.birthDate || "");
+  modal.hidden = false;
+  form.elements.name.focus();
+}
 
+async function deleteChild(childId) {
+  const child = state.children.find((item) => item.id === childId);
+  if (!child) return;
+  if (!confirm(`${child.name} 아이 정보를 삭제할까요?`)) return;
   try {
-    await authApi.updateChild(childId, { name, birthDate, gender });
+    await authApi.deleteChild(childId);
     await loadMypage();
   } catch (error) {
-    alert(`아이 정보를 수정하지 못했습니다. ${friendlyApiError(error, "auth")}`);
+    alert(`아이 정보를 삭제하지 못했습니다. ${friendlyApiError(error, "auth")}`);
   }
+}
+
+function closeChildEditModal() {
+  document.getElementById("childEditModal").hidden = true;
+  document.getElementById("childEditForm").reset();
 }
 
 function setShell(pageName) {
@@ -373,7 +416,7 @@ async function show(pageName = routeName()) {
   if (pageName === "admin") loadAdminPage();
   if (pageName === "hospitals") loadHospitals();
   if (pageName === "result") {
-    showResult(routeQuery().get("id") || state.lastConsultationId);
+    showResult(state.lastConsultationId || routeQuery().get("id"));
   }
 }
 
@@ -437,9 +480,42 @@ document.getElementById("childForm").addEventListener("submit", async (event) =>
   }
 });
 
+document.getElementById("childEditForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  try {
+    assertBirthDate(form, "birthDate");
+  } catch (error) {
+    alert(error.message);
+    return;
+  }
+
+  const data = formData(form);
+  try {
+    await authApi.updateChild(data.childId, {
+      name: data.name,
+      birthDate: data.birthDate,
+      gender: data.gender,
+    });
+    closeChildEditModal();
+    await loadMypage();
+  } catch (error) {
+    alert(`아이 정보를 수정하지 못했습니다. ${friendlyApiError(error, "auth")}`);
+  }
+});
+
+document.getElementById("childEditCloseButton").addEventListener("click", closeChildEditModal);
+document.getElementById("childEditCancelButton").addEventListener("click", closeChildEditModal);
+document.getElementById("childEditModal").addEventListener("click", (event) => {
+  if (event.target.id === "childEditModal") closeChildEditModal();
+});
+
 document.getElementById("questionnaireForm").addEventListener("submit", async (event) => {
   event.preventDefault();
-  const payload = formData(event.currentTarget);
+  const form = event.currentTarget;
+  const submitButton = form.querySelector('button[type="submit"]');
+  const loading = document.getElementById("analysisLoading");
+  const payload = formData(form);
   if (!payload.childId) {
     alert("아이를 먼저 선택해 주세요. 아이가 없으면 마이페이지에서 아이 정보를 등록한 뒤 다시 시도해 주세요.");
     return;
@@ -450,6 +526,8 @@ document.getElementById("questionnaireForm").addEventListener("submit", async (e
   }
 
   try {
+    submitButton.disabled = true;
+    loading.hidden = false;
     const created = await questionnaireApi.create(payload);
     setLastConsultationId(created.consultationId);
     try {
@@ -457,9 +535,12 @@ document.getElementById("questionnaireForm").addEventListener("submit", async (e
     } catch (error) {
       alert(`문진은 저장되었습니다. AI 분석은 나중에 다시 실행해 주세요. ${friendlyApiError(error, "ai")}`);
     }
-    navigate(`result?id=${created.consultationId}`);
+    navigate("result");
   } catch (error) {
     alert(`문진 저장에 실패했습니다. ${friendlyApiError(error, "questionnaire")}`);
+  } finally {
+    submitButton.disabled = false;
+    loading.hidden = true;
   }
 });
 
@@ -506,7 +587,7 @@ async function loadHistory() {
   document.querySelectorAll("[data-result-id]").forEach((button) => {
     button.addEventListener("click", () => {
       setLastConsultationId(button.dataset.resultId);
-      navigate(`result?id=${button.dataset.resultId}`);
+      navigate("result");
     });
   });
 }

@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ai care</title>
+    <title>aicare</title>
     <link rel="stylesheet" href="./src/styles.css" />
   </head>
   <body>
     <header class="topbar" id="topbar">
-      <a class="brand" href="#/home" aria-label="ai care 홈">ai care</a>
+      <a class="brand" href="#/home" aria-label="aicare 홈">aicare</a>
       <nav class="nav-links" aria-label="주요 메뉴">
         <a href="#/consultation" data-nav="consultation">문진 입력</a>
         <a href="#/history" data-nav="history">진료 내역</a>
@@ -23,7 +23,7 @@
     <main class="page-root">
       <section class="page auth-page" id="loginPage">
         <article class="auth-card">
-          <p class="brand-mark">ai care</p>
+          <p class="brand-mark">aicare</p>
           <h1>로그인</h1>
           <p class="subtle center">안전하고 편리한 영유아 AI 문진을 시작하세요.</p>
           <form id="loginForm">
@@ -72,7 +72,7 @@
               아이 이름
               <input name="childName" placeholder="아이 이름을 입력해 주세요" required />
             </label>
-            <div class="two-col">
+            <div class="two-col birth-gender-row">
               <label>
                 아이의 생년월일
                 <input name="childBirthDate" type="hidden" data-birthdate-value />
@@ -89,7 +89,6 @@
                   <select data-birthdate-part="month" aria-label="아이 생년월일 월"></select>
                   <select data-birthdate-part="day" aria-label="아이 생년월일 일"></select>
                 </div>
-                <small class="field-hint">연도는 직접 입력하거나 목록에서 선택할 수 있어요.</small>
               </label>
               <label>
                 성별
@@ -223,8 +222,8 @@
       <section class="page app-page" id="mypagePage">
         <div class="content-wide mypage-layout">
           <aside class="profile-card">
-            <div class="profile-logo" aria-label="ai care 아이 돌봄 클라우드">
-              <span class="logo-cloud">ai care</span>
+            <div class="profile-logo" aria-label="aicare 아이 돌봄 클라우드">
+              <span class="logo-cloud">aicare</span>
               <span class="logo-caption">아이 돌봄 클라우드</span>
             </div>
             <h1>마이페이지</h1>
@@ -235,11 +234,11 @@
               <h2>아이 정보 관리</h2>
             </div>
             <form id="childForm">
-              <div class="two-col">
-                <label>
-                  아이 이름
-                  <input name="name" placeholder="아이 이름" required />
-                </label>
+              <label>
+                아이 이름
+                <input name="name" placeholder="아이 이름" required />
+              </label>
+              <div class="two-col birth-gender-row">
                 <label>
                   아이의 생년월일
                   <input name="birthDate" type="hidden" data-birthdate-value />
@@ -256,16 +255,15 @@
                     <select data-birthdate-part="month" aria-label="아이 생년월일 월"></select>
                     <select data-birthdate-part="day" aria-label="아이 생년월일 일"></select>
                   </div>
-                  <small class="field-hint">연도는 직접 입력하거나 목록에서 선택할 수 있어요.</small>
+                </label>
+                <label>
+                  성별
+                  <select name="gender" required>
+                    <option value="male">남자아이</option>
+                    <option value="female">여자아이</option>
+                  </select>
                 </label>
               </div>
-              <label>
-                성별
-                <select name="gender" required>
-                  <option value="male">남자아이</option>
-                  <option value="female">여자아이</option>
-                </select>
-              </label>
               <button class="primary-button" type="submit">아이 추가</button>
             </form>
             <div class="child-grid compact" id="childList"></div>
@@ -381,6 +379,57 @@
         </div>
       </section>
     </main>
+
+    <div class="modal-backdrop" id="childEditModal" hidden>
+      <form class="modal-card" id="childEditForm">
+        <input name="childId" type="hidden" />
+        <div class="modal-header">
+          <h2>아이 정보 수정</h2>
+          <button class="icon-button" id="childEditCloseButton" type="button" aria-label="닫기">×</button>
+        </div>
+        <label>
+          아이 이름
+          <input name="name" placeholder="아이 이름" required />
+        </label>
+        <div class="two-col birth-gender-row">
+          <label>
+            아이의 생년월일
+            <input name="birthDate" type="hidden" data-birthdate-value />
+            <div class="birthdate-picker" data-birthdate-picker>
+              <input
+                type="text"
+                inputmode="numeric"
+                maxlength="4"
+                placeholder="연도"
+                list="birthYearOptions"
+                data-birthdate-part="year"
+                aria-label="아이 생년월일 연도"
+              />
+              <select data-birthdate-part="month" aria-label="아이 생년월일 월"></select>
+              <select data-birthdate-part="day" aria-label="아이 생년월일 일"></select>
+            </div>
+          </label>
+          <label>
+            성별
+            <select name="gender" required>
+              <option value="male">남자아이</option>
+              <option value="female">여자아이</option>
+            </select>
+          </label>
+        </div>
+        <div class="inline-actions modal-actions">
+          <button class="primary-button" type="submit">저장</button>
+          <button class="ghost-button" id="childEditCancelButton" type="button">취소</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="loading-overlay" id="analysisLoading" hidden>
+      <div class="loading-card">
+        <span class="spinner" aria-hidden="true"></span>
+        <strong>분석중입니다</strong>
+      </div>
+    </div>
 
     <datalist id="birthYearOptions"></datalist>
     <script type="module" src="./src/app.js"></script>

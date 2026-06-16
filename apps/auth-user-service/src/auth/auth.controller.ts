@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Headers, Param, Patch, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ChildDto, ChildPatchDto, LoginDto, SignupDto } from './dto/auth.dto';
 
@@ -38,5 +38,10 @@ export class AuthController {
     @Body() dto: ChildPatchDto,
   ) {
     return this.authService.updateChild(authorization, childId, dto);
+  }
+
+  @Delete('me/children/:childId')
+  deleteChild(@Headers('authorization') authorization: string | undefined, @Param('childId') childId: string) {
+    return this.authService.deleteChild(authorization, childId);
   }
 }
