@@ -17,12 +17,12 @@ export class BedrockService {
       region: process.env.AWS_REGION ?? 'ap-northeast-2',
     });
 
-  async analyze(text: string, tokens: string[]) {
+  async analyze(text: string) {
     if ((process.env.BEDROCK_MOCK ?? '').toLowerCase() === 'true') {
       return {
         content: [
           {
-            text: JSON.stringify(this.mockResult(tokens)),
+            text: JSON.stringify(this.mockResult(text)),
           },
         ],
       };
@@ -32,8 +32,7 @@ export class BedrockService {
       'You are a pediatric triage assistant. Use Korean.',
       'Return valid compact JSON only. No markdown.',
       `Original text: ${text}`,
-      `Kiwi tokens: ${tokens.join(', ')}`,
-      'Decide risk using the original text and tokens.',
+      'Analyze Korean pediatric symptoms directly from the original text.',
       'Keep each sentence short.',
       'Schema: {"summary_title":"","summary":"","risk_level":"LOW|MEDIUM|HIGH","risk_reason":"","emergency":false,"symptom_findings":[{"term":"","meaning":"","severity":"LOW|MEDIUM|HIGH"}],"possibleDiseases":[],"department_hint":"","hospital_recommendation":"","recommendation":""}',
     ].join('\n');
@@ -90,8 +89,8 @@ export class BedrockService {
     }
   }
 
-  private mockResult(tokens: string[]) {
-    const joined = tokens.join(' ');
+  private mockResult(text: string) {
+    const joined = String(text || '');
     const emergency = /경련|의식|호흡|청색|탈수|피|혈변|반복/.test(joined);
     const high = emergency || /고열|39|40|숨|처짐/.test(joined);
     const medium = high || /열|기침|설사|구토|발진|통증/.test(joined);
@@ -99,8 +98,8 @@ export class BedrockService {
     return {
       summary_title: '로컬 AI 문진 요약',
       summary:
-        tokens.length > 0
-          ? `입력된 증상 키워드(${tokens.slice(0, 8).join(', ')})를 기준으로 만든 로컬 테스트 요약입니다.`
+        joined.trim().length > 0
+          ? '입력된 증상 원문을 기준으로 만든 로컬 테스트 요약입니다.'
           : '입력된 증상 내용을 기준으로 만든 로컬 테스트 요약입니다.',
       risk_level: high ? 'HIGH' : medium ? 'MEDIUM' : 'LOW',
       emergency,
