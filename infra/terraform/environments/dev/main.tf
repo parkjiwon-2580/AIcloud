@@ -32,6 +32,8 @@ locals {
     ManagedBy   = "terraform"
     Scope       = "infra-only"
   })
+
+  frontend_domain_names = distinct(concat([var.domain_name], var.frontend_domain_names))
 }
 
 moved {
@@ -367,5 +369,68 @@ module "karpenter" {
 }
 
 resource "aws_route53_zone" "main" {
-  name = "aicare.art"
+  name = var.domain_name
+}
+
+resource "aws_acm_certificate" "frontend" {
+  domain_name = var.domain_name
+
+  subject_alternative_names = [
+    for domain_name in local.frontend_domain_names : domain_name
+    if domain_name != var.domain_name
+  ]
+
+  validation_method = "DNS"
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-${var.environment}-frontend-certificate"
+  })
+}
+
+resource "aws_route53_record" "frontend_certificate_validation" {
+  for_each = {
+    for option in aws_acm_certificate.frontend.domain_validation_options :
+    option.domain_name => {
+      name   = option.resource_record_name
+      record = option.resource_record_value
+      type   = option.resource_record_type
+    }
+  }
+
+  allow_overwrite = true
+  name            = each.value.name
+  records         = [each.value.record]
+  ttl             = 60
+  type            = each.value.type
+  zone_id         = aws_route53_zone.main.zone_id
+}
+
+resource "aws_acm_certificate_validation" "frontend" {
+  certificate_arn = aws_acm_certificate.frontend.arn
+
+  validation_record_fqdns = [
+    for record in aws_route53_record.frontend_certificate_validation : record.fqdn
+  ]
+}
+
+resource "aws_route53_record" "frontend_alias" {
+  for_each = (
+    var.frontend_alb_dns_name != "" && var.frontend_alb_zone_id != ""
+    ? toset(local.frontend_domain_names)
+    : toset([])
+  )
+
+  name    = each.value
+  type    = "A"
+  zone_id = aws_route53_zone.main.zone_id
+
+  alias {
+    name                   = var.frontend_alb_dns_name
+    zone_id                = var.frontend_alb_zone_id
+    evaluate_target_health = true
+  }
 }

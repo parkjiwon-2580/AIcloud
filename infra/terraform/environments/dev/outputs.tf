@@ -82,6 +82,18 @@ output "service_nat_gateway" {
   }
 }
 
+output "bastion" {
+  description = "Bastion EC2 outputs."
+  value = {
+    bastion_instance_id               = module.bastion.bastion_instance_id
+    bastion_public_ip                 = module.bastion.bastion_public_ip
+    bastion_private_ip                = module.bastion.bastion_private_ip
+    bastion_public_dns                = module.bastion.bastion_public_dns
+    bastion_iam_instance_profile_name = module.bastion.bastion_iam_instance_profile_name
+    bastion_iam_role_name             = module.bastion.bastion_iam_role_name
+  }
+}
+
 output "eks" {
   description = "EKS outputs."
   value = {
@@ -125,6 +137,29 @@ output "app_services" {
     backend_irsa_policy_arn     = module.app_services.backend_irsa_policy_arn
     ai_processor_role_arn       = module.app_services.ai_processor_role_arn
     ai_processor_policy_arn     = module.app_services.ai_processor_policy_arn
+  }
+}
+
+output "route53" {
+  description = "Route 53 public hosted zone outputs."
+  value = {
+    domain_name           = aws_route53_zone.main.name
+    frontend_domain_names = local.frontend_domain_names
+    zone_id               = aws_route53_zone.main.zone_id
+    name_servers          = aws_route53_zone.main.name_servers
+    acm_certificate_arn   = aws_acm_certificate.frontend.arn
+    acm_validation_record_names = [
+      for record in aws_route53_record.frontend_certificate_validation : record.name
+    ]
+  }
+}
+
+output "route53_zone" {
+  description = "Route 53 public hosted zone delegation outputs."
+  value = {
+    domain_name  = aws_route53_zone.main.name
+    zone_id      = aws_route53_zone.main.zone_id
+    name_servers = aws_route53_zone.main.name_servers
   }
 }
 

@@ -36,3 +36,5 @@ package.*
 package-lock.*
 iam_policy.*
 trust-policy.*
+
+.idea/

@@ -302,7 +302,12 @@ data "aws_iam_policy_document" "backend" {
   statement {
     sid       = "BedrockInvoke"
     effect    = "Allow"
-    actions   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+    actions = [
+      "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream",
+      "bedrock:GetInferenceProfile",
+      "bedrock:ListInferenceProfiles"
+    ]
     resources = ["*"]
   }
 
@@ -376,7 +381,12 @@ data "aws_iam_policy_document" "ai_processor" {
   statement {
     sid       = "BedrockInvoke"
     effect    = "Allow"
-    actions   = ["bedrock:InvokeModel", "bedrock:InvokeModelWithResponseStream"]
+    actions = [
+      "bedrock:InvokeModel",
+      "bedrock:InvokeModelWithResponseStream",
+      "bedrock:GetInferenceProfile",
+      "bedrock:ListInferenceProfiles"
+    ]
     resources = ["*"]
   }
 
