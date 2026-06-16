@@ -38,6 +38,41 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
+function asTextList(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") return item;
+      if (item && typeof item === "object") {
+        return item.name || item.term || item.disease || item.label || "";
+      }
+      return String(item ?? "");
+    })
+    .map((item) => String(item).trim())
+    .filter(Boolean);
+}
+
+function asFindingList(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (typeof item === "string") {
+        return { term: item, meaning: item, severity: "" };
+      }
+      if (!item || typeof item !== "object") return null;
+      const term = String(item.term || item.name || item.symptom || "").trim();
+      const meaning = String(item.meaning || item.description || item.reason || term).trim();
+      const severity = String(item.severity || "").trim();
+      if (!term && !meaning) return null;
+      return {
+        term: term || meaning,
+        meaning: meaning || term,
+        severity,
+      };
+    })
+    .filter(Boolean);
+}
+
 function formData(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
@@ -629,6 +664,11 @@ async function showResult(id) {
   };
   const riskLevel = data.risk_level || data.riskLevel || "UNKNOWN";
   const departmentHint = data.department_hint || data.departmentHint || "소아청소년과";
+  const riskReason = data.risk_reason || data.riskReason || "";
+  const hospitalRecommendation =
+    data.hospital_recommendation || data.hospitalRecommendation || "";
+  const possibleDiseases = asTextList(data.possible_diseases || data.possibleDiseases);
+  const symptomFindings = asFindingList(data.symptom_findings || data.symptomFindings);
   const risk = String(riskLevel).toLowerCase();
 
   document.getElementById("resultCard").innerHTML = `
@@ -644,9 +684,48 @@ async function showResult(id) {
         <h2>${escapeHtml(data.summary_title || "AI 문진 요약")}</h2>
         <p class="subtle">${escapeHtml(data.summary || "")}</p>
       </section>
+      ${
+        riskReason
+          ? `<section>
+              <h2>위험 판단 근거</h2>
+              <p class="subtle">${escapeHtml(riskReason)}</p>
+            </section>`
+          : ""
+      }
+      ${
+        symptomFindings.length
+          ? `<section>
+              <h2>주요 증상 소견</h2>
+              <ul class="result-list">
+                ${symptomFindings
+                  .map(
+                    (item) => `
+                      <li>
+                        <strong>${escapeHtml(item.term)}</strong>
+                        <span>${escapeHtml(item.meaning)}</span>
+                        <em>${escapeHtml(item.severity)}</em>
+                      </li>
+                    `,
+                  )
+                  .join("")}
+              </ul>
+            </section>`
+          : ""
+      }
+      ${
+        possibleDiseases.length
+          ? `<section>
+              <h2>참고 가능한 질환 범주</h2>
+              <div class="chip-row">
+                ${possibleDiseases.map((item) => `<span>${escapeHtml(item)}</span>`).join("")}
+              </div>
+            </section>`
+          : ""
+      }
       <section>
         <h2>추천 진료과</h2>
         <p>${escapeHtml(departmentHint)}</p>
+        ${hospitalRecommendation ? `<p class="subtle">${escapeHtml(hospitalRecommendation)}</p>` : ""}
       </section>
       <section>
         <h2>권장 사항</h2>
