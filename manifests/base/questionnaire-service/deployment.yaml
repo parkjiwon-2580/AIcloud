@@ -14,6 +14,7 @@ spec:
       labels:
         app: questionnaire-service
     spec:
+      serviceAccountName: backend
       containers:
       - name: questionnaire-service
         image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/questionnaire-service:latest # 나중에 치환될 부분

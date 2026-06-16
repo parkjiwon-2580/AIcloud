@@ -68,7 +68,7 @@ variable "eks_oidc_issuer_url" {
 variable "backend_service_account_namespace" {
   description = "Kubernetes namespace for the backend service account."
   type        = string
-  default     = "default"
+  default     = "service"
 }
 
 variable "backend_service_account_name" {
