@@ -23,7 +23,12 @@ export class OnpremService {
       return {
         rawPayload: response.data.raw_payload ?? {},
       };
-    } catch {
+    } catch (error) {
+      console.error('onprem-sensitive-api consultation lookup failed', {
+        baseURL: process.env.ONPREM_API_BASE_URL ?? 'http://onprem-sensitive-api:9000',
+        consultationId,
+        message: error instanceof Error ? error.message : String(error),
+      });
       throw new BadGatewayException('onprem-sensitive-api consultation lookup failed');
     }
   }

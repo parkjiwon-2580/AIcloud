@@ -11,7 +11,7 @@ function databaseSslConfig(): PoolConfig['ssl'] {
 }
 
 function databaseConfig(): PoolConfig {
-  const connectionString = process.env.DATABASE_URL;
+  const connectionString = kubernetesSafeDatabaseUrl();
   const ssl = databaseSslConfig();
   if (connectionString) {
     return { connectionString, ssl };
@@ -25,6 +25,25 @@ function databaseConfig(): PoolConfig {
     password: process.env.RDS_PASSWORD,
     ssl,
   };
+}
+
+function kubernetesSafeDatabaseUrl(): string | undefined {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString || !process.env.KUBERNETES_SERVICE_HOST) {
+    return connectionString;
+  }
+
+  try {
+    const host = new URL(connectionString).hostname.toLowerCase();
+    if (['localhost', '127.0.0.1', 'host.docker.internal'].includes(host)) {
+      console.warn('Ignoring local DATABASE_URL inside Kubernetes; using RDS_* settings instead.');
+      return undefined;
+    }
+  } catch {
+    return connectionString;
+  }
+
+  return connectionString;
 }
 
 export const pool = new Pool(databaseConfig());

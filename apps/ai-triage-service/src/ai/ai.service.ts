@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { pool } from '../database/postgres';
-import { KiwiService } from '../kiwi/kiwi.service';
 import { BedrockService } from '../bedrock/bedrock.service';
 import { ReportService } from '../report/report.service';
 import { OnpremService } from '../onprem/onprem.service';
@@ -8,7 +7,6 @@ import { OnpremService } from '../onprem/onprem.service';
 @Injectable()
 export class AiService {
   constructor(
-    private readonly kiwiService: KiwiService,
     private readonly bedrockService: BedrockService,
     private readonly reportService: ReportService,
     private readonly onpremService: OnpremService,
@@ -35,35 +33,20 @@ export class AiService {
       );
     }
 
-    const sensitiveConsultation =
-      await this.onpremService.getConsultation(
-        consultationId,
-      );
-
     const text =
-      this.extractAnalysisText(
-        sensitiveConsultation.rawPayload,
-        consultation.rows[0].content_data,
-      );
-
-    const kiwi =
-      await this.kiwiService.analyze(
-        text,
+      await this.analysisText(
+        consultationId,
+        consultation.rows[0],
       );
 
     const modelResult =
       await this.bedrockService.analyze(
         text,
-        kiwi.tokens,
       );
     const result =
       this.toResultObject(
         this.normalizeModelResult(modelResult),
       );
-    result.morphology = {
-      mode: kiwi.mode,
-      tokens: kiwi.tokens,
-    };
 
     await pool.query(
       `
@@ -181,17 +164,25 @@ async showTables() {
     }
 
     const raw = parsed as Record<string, unknown>;
-    const riskLevel = String(raw.risk_level ?? raw.riskLevel ?? 'UNKNOWN');
-    const possibleDiseases = Array.isArray(raw.possibleDiseases)
-      ? raw.possibleDiseases.map(String)
-      : [];
-    const symptomFindings = Array.isArray(raw.symptom_findings)
-      ? raw.symptom_findings
-      : Array.isArray(raw.symptomFindings)
-        ? raw.symptomFindings
-        : [];
+    const riskLevel = this.normalizeRiskLevel(
+      raw.risk_level ?? raw.riskLevel,
+    );
+    const possibleDiseases = this.normalizeStringList(
+      raw.possible_diseases ??
+        raw.possibleDiseases ??
+        raw.diseases ??
+        raw.possible_diagnoses,
+    );
+    const symptomFindings = this.normalizeFindings(
+      raw.symptom_findings ?? raw.symptomFindings ?? raw.findings,
+    );
     const departmentHint = String(raw.department_hint ?? raw.departmentHint ?? '소아청소년과');
-    const recommendation = String(raw.recommendation ?? '');
+    const recommendation = String(
+      raw.recommendation ??
+        raw.care_recommendation ??
+        raw.next_steps ??
+        this.defaultRecommendation(riskLevel),
+    );
 
     return {
       summary_title:
@@ -211,7 +202,10 @@ async showTables() {
       recommendation,
       emergency: Boolean(raw.emergency),
       possible_diseases: possibleDiseases,
-      risk_reason: raw.risk_reason ?? raw.riskReason ?? '',
+      risk_reason:
+        raw.risk_reason ??
+        raw.riskReason ??
+        this.defaultRiskReason(riskLevel),
       symptom_findings: symptomFindings,
       hospital_recommendation:
         raw.hospital_recommendation ??
@@ -220,6 +214,115 @@ async showTables() {
       disclaimer: '본 결과는 의료진 진단을 대체하지 않는 참고용입니다.',
       model_raw: raw,
     };
+  }
+
+  private normalizeRiskLevel(value: unknown): 'LOW' | 'MEDIUM' | 'HIGH' | 'UNKNOWN' {
+    const upper = String(value ?? '').toUpperCase();
+    if (upper.includes('HIGH') || upper.includes('높')) return 'HIGH';
+    if (upper.includes('MEDIUM') || upper.includes('중')) return 'MEDIUM';
+    if (upper.includes('LOW') || upper.includes('낮')) return 'LOW';
+    return 'UNKNOWN';
+  }
+
+  private normalizeStringList(value: unknown): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object') {
+          const record = item as Record<string, unknown>;
+          return String(
+            record.name ??
+              record.term ??
+              record.disease ??
+              record.label ??
+              '',
+          );
+        }
+        return String(item ?? '');
+      })
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+
+  private normalizeFindings(value: unknown): Array<{
+    term: string;
+    meaning: string;
+    severity: string;
+  }> {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return value
+      .map((item) => {
+        if (typeof item === 'string') {
+          return {
+            term: item,
+            meaning: item,
+            severity: 'MEDIUM',
+          };
+        }
+
+        if (!item || typeof item !== 'object') {
+          return undefined;
+        }
+
+        const record = item as Record<string, unknown>;
+        const term = String(record.term ?? record.name ?? record.symptom ?? '').trim();
+        const meaning = String(record.meaning ?? record.description ?? record.reason ?? term).trim();
+        const severity = this.normalizeRiskLevel(record.severity);
+
+        if (!term && !meaning) {
+          return undefined;
+        }
+
+        return {
+          term: term || meaning,
+          meaning: meaning || term,
+          severity,
+        };
+      })
+      .filter(
+        (
+          item,
+        ): item is {
+          term: string;
+          meaning: string;
+          severity: string;
+        } => Boolean(item),
+      );
+  }
+
+  private defaultRiskReason(riskLevel: string): string {
+    if (riskLevel === 'HIGH') {
+      return '고열, 처짐, 섭취 감소, 소변량 감소 같은 위험 신호가 함께 있으면 빠른 진료가 필요할 수 있습니다.';
+    }
+
+    if (riskLevel === 'MEDIUM') {
+      return '증상이 지속되거나 악화되면 소아청소년과 진료 상담이 필요할 수 있습니다.';
+    }
+
+    if (riskLevel === 'LOW') {
+      return '현재 입력만으로는 응급 위험 신호가 뚜렷하지 않습니다.';
+    }
+
+    return '입력된 증상을 기준으로 위험도를 판단했습니다.';
+  }
+
+  private defaultRecommendation(riskLevel: string): string {
+    if (riskLevel === 'HIGH') {
+      return '증상이 심하거나 아이가 축 처져 보이면 지체하지 말고 의료기관에 문의하거나 응급 진료를 고려하세요.';
+    }
+
+    if (riskLevel === 'MEDIUM') {
+      return '수분 섭취와 소변량을 관찰하고 증상이 지속되면 소아청소년과 진료를 권장합니다.';
+    }
+
+    return '충분히 쉬게 하고 증상 변화를 관찰하세요. 악화되면 진료를 권장합니다.';
   }
 
   private toResultObject(result: unknown): Record<string, unknown> {
@@ -292,5 +395,31 @@ async showTables() {
     }
 
     return JSON.stringify(contentData ?? rawPayload);
+  }
+
+  private async analysisText(
+    consultationId: string,
+    consultation: Record<string, unknown>,
+  ): Promise<string> {
+    try {
+      const sensitiveConsultation =
+        await this.onpremService.getConsultation(
+          consultationId,
+        );
+
+      return this.extractAnalysisText(
+        sensitiveConsultation.rawPayload,
+        consultation.content_data,
+      );
+    } catch (error) {
+      console.warn('Falling back to RDS consultation metadata for analysis', {
+        consultationId,
+        message: error instanceof Error ? error.message : String(error),
+      });
+      return this.extractAnalysisText(
+        {},
+        consultation.content_data ?? consultation.symptom_summary,
+      );
+    }
   }
 }

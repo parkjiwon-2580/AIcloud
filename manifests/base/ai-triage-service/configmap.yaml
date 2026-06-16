@@ -9,15 +9,22 @@ data:
   LOG_LEVEL: "INFO"
   TZ: "Asia/Seoul"
   AWS_REGION: "ap-northeast-2"
+  BEDROCK_MODEL_ID: "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+  BEDROCK_MOCK: "false"
+  BEDROCK_FALLBACK_TO_MOCK: "false"
   # S3 설정
   S3_BUCKET_NAME: "ai-care-dev-reports-105959916837"
   S3_REPORT_PREFIX: "reports/"
   S3_PRESIGNED_URL_EXPIRE_SECONDS: "300"
   REPORT_FONT_PATH: ""
+  ONPREM_API_BASE_URL: "http://172.16.10.10:9000"
+  ONPREM_API_TIMEOUT_MS: "10000"
   # RDS 접속 정보 (비밀번호는 Secret에서 관리)
   RDS_HOST: "ai-care-dev-postgres.czeumgqsmwh8.ap-northeast-2.rds.amazonaws.com"
   RDS_PORT: "5432"
   RDS_DB_NAME: "aicare"
   RDS_USERNAME: "dbadmin"
+  RDS_SSL: "true"
+  RDS_SSL_REJECT_UNAUTHORIZED: "false"
   # CORS 설정
   CORS_ALLOWED_ORIGINS: "http://localhost:3000,http://localhost:5173"

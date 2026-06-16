@@ -24,3 +24,13 @@ export class BoardPostDto {
   @IsArray()
   imageS3Keys?: string[];
 }
+
+export class BoardImageUploadDto {
+  @IsString()
+  @MinLength(1)
+  filename!: string;
+
+  @IsString()
+  @MinLength(1)
+  contentType!: string;
+}

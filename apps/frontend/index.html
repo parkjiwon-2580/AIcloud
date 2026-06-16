@@ -188,16 +188,28 @@
             <p class="subtle">추천 진료과와 지역을 기준으로 주변 병원을 조회합니다. 추천 결과는 DB에 저장하지 않습니다.</p>
           </header>
           <form class="search-panel" id="hospitalForm">
-            <select name="department" aria-label="진료과 선택">
-              <option value="소아청소년과">소아청소년과</option>
-              <option value="응급실">응급실</option>
-              <option value="이비인후과">이비인후과</option>
-              <option value="피부과">피부과</option>
-              <option value="내과">내과</option>
-              <option value="정형외과">정형외과</option>
-              <option value="">전체 병원</option>
-            </select>
-            <input name="keyword" placeholder="병원명 또는 검색어 예: 아산키즈, 응급실" />
+            <fieldset class="department-toggle" aria-label="진료과 선택">
+              <label>
+                <input type="radio" name="department" value="소아청소년과" checked />
+                <span>소아청소년과</span>
+              </label>
+              <label>
+                <input type="radio" name="department" value="응급실" />
+                <span>응급실</span>
+              </label>
+              <label>
+                <input type="radio" name="department" value="이비인후과" />
+                <span>이비인후과</span>
+              </label>
+              <label>
+                <input type="radio" name="department" value="피부과" />
+                <span>피부과</span>
+              </label>
+              <label>
+                <input type="radio" name="department" value="" />
+                <span>전체</span>
+              </label>
+            </fieldset>
             <input name="region" placeholder="지역 예: 서울 강남구" />
             <button class="primary-button" type="submit">검색</button>
           </form>
@@ -345,6 +357,11 @@
                   내용
                   <textarea name="content" placeholder="보호자가 참고할 수 있는 월령별 건강 정보를 입력해 주세요." required></textarea>
                 </label>
+                <label>
+                  이미지
+                  <input name="images" type="file" accept="image/*" multiple />
+                </label>
+                <div class="image-upload-list" id="adminPostImageList"></div>
                 <div class="inline-actions">
                   <button class="primary-button" type="submit" id="adminPostSubmitButton">글 등록</button>
                   <button class="ghost-button" type="button" id="adminPostResetButton">새 글 작성</button>

@@ -21,6 +21,13 @@ export const boardApi = {
     });
   },
 
+  createImageUploadUrl(payload) {
+    return request("board", "/info/images/upload-url", {
+      method: "POST",
+      body: payload,
+    });
+  },
+
   updatePost(id, payload) {
     return request("board", `/info/posts/${encodeURIComponent(id)}`, {
       method: "PATCH",
