@@ -13,7 +13,7 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/frontend-service
-  newTag: codex-info-image-size-fix
+  newTag: 88ca6a42592cb426330425f9dc47a1d70556eb1e
 
 patches:
 - path: ingress-backends-patch.yaml
