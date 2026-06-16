@@ -6,9 +6,7 @@ import { hospitalApi } from "./api/hospital.api.js";
 import { questionnaireApi } from "./api/questionnaire.api.js";
 
 const LAST_CONSULTATION_KEY = "aicloud.lastConsultationId";
-const KAKAO_JS_KEY = "7ed4eb0a52edd0459d28de6073874a34";
 const HOSPITAL_SEARCH_FALLBACK_REGION = "서울 강남구";
-const KAKAO_SEARCH_TIMEOUT_MS = 3500;
 
 const AGE_FILTERS = [
   { label: "전체", value: "전체" },
@@ -22,6 +20,7 @@ const AGE_FILTERS = [
 const INFO_CATEGORIES = ["예방접종", "주의사항", "발달", "영양", "질환정보", "응급징후", "공지"];
 
 const state = {
+  adminPostImageKeys: [],
   adminPosts: [],
   children: [],
   infoAgeFilter: "전체",
@@ -176,6 +175,7 @@ function normalizeInfoPost(post) {
     targetAgeMonths,
     viewCount: post.viewCount ?? post.view_count ?? 0,
     createdAt: post.createdAt || post.created_at,
+    images: post.images || [],
   };
 }
 
@@ -705,8 +705,10 @@ function kiwiTokenizeHospitalQuery(text) {
     .filter((token) => token.length > 0);
 }
 
-function normalizeHospitalKeyword(keyword) {
-  const tokens = kiwiTokenizeHospitalQuery(keyword);
+function normalizeHospitalKeyword(keyword, fallback = "소아청소년과") {
+  const raw = String(keyword ?? "").trim();
+  if (!raw) return "";
+  const tokens = kiwiTokenizeHospitalQuery(raw);
   const compact = tokens.join("");
   const source = `${tokens.join(" ")} ${compact}`;
 
@@ -715,103 +717,12 @@ function normalizeHospitalKeyword(keyword) {
   if (/피부|발진|두드러기|아토피/.test(source)) return "피부과";
   if (/응급|야간|심야/.test(source)) return "응급실";
 
-  return tokens[0] || "소아청소년과";
+  return tokens[0] || fallback;
 }
 
-function loadKakaoPlaces() {
-  if (window.kakao?.maps?.services?.Places) {
-    return Promise.resolve(window.kakao.maps.services);
-  }
-
-  return new Promise((resolve, reject) => {
-    const existingScript = document.querySelector("script[data-kakao-sdk]");
-    const script = existingScript || document.createElement("script");
-
-    const onReady = () => {
-      if (!window.kakao?.maps?.load) {
-        reject(new Error("카카오 지도 SDK가 현재 도메인에서 활성화되지 않았습니다."));
-        return;
-      }
-      window.kakao.maps.load(() => {
-        if (window.kakao?.maps?.services?.Places) {
-          resolve(window.kakao.maps.services);
-          return;
-        }
-        reject(new Error("카카오 장소 검색 라이브러리를 불러오지 못했습니다."));
-      });
-    };
-
-    if (!existingScript) {
-      script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${KAKAO_JS_KEY}&libraries=services&autoload=false`;
-      script.async = true;
-      script.dataset.kakaoSdk = "true";
-    }
-
-    script.addEventListener("load", onReady, { once: true });
-    script.addEventListener("error", () => reject(new Error("카카오 지도 SDK를 불러오지 못했습니다.")));
-
-    if (existingScript && script.dataset.loaded === "true") {
-      onReady();
-      return;
-    }
-
-    script.addEventListener("load", () => {
-      script.dataset.loaded = "true";
-    }, { once: true });
-
-    if (!existingScript) document.head.appendChild(script);
-  });
-}
-
-function withTimeout(promise, timeoutMs, timeoutMessage) {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) => {
-      window.setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
-    }),
-  ]);
-}
-
-function searchKakaoHospitals(query) {
-  return loadKakaoPlaces().then(
-    (services) =>
-      new Promise((resolve, reject) => {
-        const places = new services.Places();
-        places.keywordSearch(query, (data, status) => {
-          if (status === services.Status.OK) {
-            resolve(data.slice(0, 9).map((item, index) => normalizeKakaoHospital(item, index)));
-            return;
-          }
-          if (status === services.Status.ZERO_RESULT) {
-            resolve([]);
-            return;
-          }
-          reject(new Error("카카오 장소 검색에 실패했습니다."));
-        });
-      }),
-  );
-}
-
-function normalizeKakaoHospital(item, index) {
-  const openingHours = item.opening_hours || item.openingHours || item.business_hours || "영업시간 확인 필요";
-  const rawOpen = item.is_open ?? item.isOpen ?? item.open ?? item.business_status;
-  const isOpen =
-    typeof rawOpen === "boolean"
-      ? rawOpen
-      : typeof rawOpen === "string"
-        ? /영업중|open|operating/i.test(rawOpen)
-        : null;
-
-  return {
-    name: item.place_name,
-    distance: item.distance ? `${(Number(item.distance) / 1000).toFixed(1)}km` : `${index + 1}번째 결과`,
-    openingHours,
-    isOpen,
-    address: item.road_address_name || item.address_name || "",
-    department: item.category_name || "병원",
-    phone: item.phone || "",
-    url: item.place_url || "",
-  };
+function normalizeLocationQuery(region) {
+  const tokens = kiwiTokenizeHospitalQuery(region);
+  return tokens.join(" ") || HOSPITAL_SEARCH_FALLBACK_REGION;
 }
 
 function renderOpenBadge(isOpen) {
@@ -820,38 +731,17 @@ function renderOpenBadge(isOpen) {
   return '<span class="open-badge is-unknown">확인 필요</span>';
 }
 
-async function loadHospitals(form = { department: "소아청소년과", keyword: "", region: HOSPITAL_SEARCH_FALLBACK_REGION }) {
-  const keyword = String(form.keyword || "").trim();
-  const department = normalizeHospitalKeyword(form.department || keyword || "소아청소년과");
-  const region = String(form.region || HOSPITAL_SEARCH_FALLBACK_REGION).trim();
-  const query = `${region} ${keyword || department} 병원`;
+async function loadHospitals(form = { department: "소아청소년과", region: HOSPITAL_SEARCH_FALLBACK_REGION }) {
+  const department = normalizeHospitalKeyword(form.department, "");
+  const region = normalizeLocationQuery(form.region || HOSPITAL_SEARCH_FALLBACK_REGION);
+  const query = `${region} ${department || "전체 병원"}`;
   let hospitals = [];
   renderNotice("hospitalList", "병원을 검색하고 있습니다", `${query} 기준으로 조회 중입니다.`);
   try {
-    hospitals = await hospitalApi.recommend({ department, keyword, region });
+    hospitals = await hospitalApi.recommend({ department, keyword: "", region });
   } catch (apiError) {
-    try {
-      hospitals = await withTimeout(
-        searchKakaoHospitals(query),
-        KAKAO_SEARCH_TIMEOUT_MS,
-        "카카오 장소 검색 응답이 지연되고 있습니다.",
-      );
-    } catch (error) {
-      renderNotice("hospitalList", "병원 추천을 불러올 수 없습니다", `${friendlyApiError(apiError, "hospital")} ${error.message}`);
-      return;
-    }
-  }
-
-  if (!hospitals.length) {
-    try {
-      hospitals = await withTimeout(
-        searchKakaoHospitals(query),
-        KAKAO_SEARCH_TIMEOUT_MS,
-        "카카오 장소 검색 응답이 지연되고 있습니다.",
-      );
-    } catch {
-      hospitals = [];
-    }
+    renderNotice("hospitalList", "병원 추천을 불러올 수 없습니다", friendlyApiError(apiError, "hospital"));
+    return;
   }
 
   if (!hospitals.length) {
@@ -994,6 +884,7 @@ async function loadInfoDetail(id) {
         <span class="category-badge">${escapeHtml(post.category)}</span>
       </div>
       <strong>${escapeHtml(post.title)}</strong>
+      ${renderPostImages(post.images)}
       <p>${escapeHtml(post.content)}</p>
       <small>${escapeHtml(post.admin?.nickname || "관리자")} · ${escapeHtml(formatDate(post.createdAt))} · 조회 ${escapeHtml(post.viewCount || 0)}</small>
       <div class="info-disclaimer">
@@ -1042,8 +933,76 @@ function resetAdminPostForm() {
   const form = document.getElementById("adminPostForm");
   form.reset();
   form.elements.postId.value = "";
+  state.adminPostImageKeys = [];
+  renderAdminPostImages();
   document.getElementById("adminPostSubmitButton").textContent = "글 등록";
   document.getElementById("adminPostStatus").textContent = "";
+}
+
+function renderPostImages(images = []) {
+  const visibleImages = images.filter((image) => image.url);
+  if (!visibleImages.length) return "";
+  return `
+    <div class="post-image-strip">
+      ${visibleImages
+        .slice(0, 3)
+        .map((image) => `<img src="${escapeHtml(image.url)}" alt="" loading="lazy" />`)
+        .join("")}
+    </div>
+  `;
+}
+
+function renderAdminPostImages() {
+  const target = document.getElementById("adminPostImageList");
+  if (!target) return;
+  if (!state.adminPostImageKeys.length) {
+    target.innerHTML = "";
+    return;
+  }
+
+  target.innerHTML = state.adminPostImageKeys
+    .map(
+      (key, index) => `
+        <span class="image-pill">
+          이미지 ${index + 1}
+          <button type="button" data-remove-admin-image="${escapeHtml(key)}" aria-label="이미지 제거">×</button>
+        </span>
+      `,
+    )
+    .join("");
+
+  document.querySelectorAll("[data-remove-admin-image]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.adminPostImageKeys = state.adminPostImageKeys.filter((key) => key !== button.dataset.removeAdminImage);
+      renderAdminPostImages();
+    });
+  });
+}
+
+async function uploadAdminPostImages(files) {
+  const imageFiles = Array.from(files || []).filter((file) => file.type.startsWith("image/"));
+  if (!imageFiles.length) return;
+
+  document.getElementById("adminPostStatus").textContent = "이미지를 S3에 업로드하고 있습니다.";
+  for (const file of imageFiles) {
+    const presigned = await boardApi.createImageUploadUrl({
+      filename: file.name,
+      contentType: file.type,
+    });
+    const response = await fetch(presigned.uploadUrl, {
+      method: "PUT",
+      headers: {
+        "content-type": file.type,
+      },
+      body: file,
+    });
+    if (!response.ok) {
+      throw new Error(`${file.name} 업로드에 실패했습니다.`);
+    }
+    state.adminPostImageKeys.push(presigned.key);
+  }
+  renderAdminPostImages();
+  document.getElementById("adminPostStatus").textContent = "이미지 업로드가 완료되었습니다.";
 }
 
 async function loadAdminPosts() {
@@ -1071,6 +1030,7 @@ async function loadAdminPosts() {
               <span class="category-badge">${escapeHtml(post.category)}</span>
             </div>
             <strong>${escapeHtml(post.title)}</strong>
+            ${renderPostImages(post.images)}
             <small>${escapeHtml(formatDateTime(post.createdAt))} · 조회수 ${escapeHtml(post.viewCount || 0)}</small>
             <p class="subtle">${escapeHtml(String(post.content || "").slice(0, 110))}${String(post.content || "").length > 110 ? "..." : ""}</p>
           </div>
@@ -1093,6 +1053,8 @@ async function loadAdminPosts() {
       form.elements.targetAgeMonths.value = post.targetAgeMonths || "전체";
       form.elements.title.value = post.title || "";
       form.elements.content.value = post.content || "";
+      state.adminPostImageKeys = (post.images || []).map((image) => image.s3Key).filter(Boolean);
+      renderAdminPostImages();
       document.getElementById("adminPostSubmitButton").textContent = "수정 저장";
       document.getElementById("adminPostStatus").textContent = "수정할 내용을 확인한 뒤 저장해 주세요.";
       form.elements.title.focus();
@@ -1126,6 +1088,7 @@ document.getElementById("adminPostForm").addEventListener("submit", async (event
     targetAgeMonths: data.targetAgeMonths,
     title: data.title,
     content: data.content,
+    imageS3Keys: state.adminPostImageKeys,
   };
   try {
     const statusMessage = data.postId ? "정보공유 글이 수정되었습니다." : "정보공유 글이 등록되었습니다.";
@@ -1139,6 +1102,15 @@ document.getElementById("adminPostForm").addEventListener("submit", async (event
     await loadAdminPosts();
   } catch (error) {
     alert(`저장하지 못했습니다. ${friendlyApiError(error, "board")}`);
+  }
+});
+
+document.querySelector('#adminPostForm input[name="images"]').addEventListener("change", async (event) => {
+  try {
+    await uploadAdminPostImages(event.currentTarget.files);
+    event.currentTarget.value = "";
+  } catch (error) {
+    alert(`이미지를 업로드하지 못했습니다. ${friendlyApiError(error, "board")}`);
   }
 });
 

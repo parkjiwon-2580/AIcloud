@@ -1,14 +1,19 @@
-import { Injectable, NotFoundException, OnModuleDestroy } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, OnModuleDestroy, ServiceUnavailableException } from '@nestjs/common';
+import { GetObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { randomUUID } from 'crypto';
+import { extname } from 'path';
 import { Pool, type PoolClient, type PoolConfig } from 'pg';
 import { readEnv, readNumberEnv, requireEnv } from '../config';
 import { RequestUserService } from '../request-user.service';
-import { BoardPostDto } from './dto/board.dto';
+import { BoardImageUploadDto, BoardPostDto } from './dto/board.dto';
 
 interface BoardImageRecord {
   id: string;
   postId: string;
   s3Key: string;
   createdAt: Date;
+  url?: string;
 }
 
 interface BoardPostRecord {
@@ -35,6 +40,9 @@ interface BoardPostRecord {
 @Injectable()
 export class BoardService implements OnModuleDestroy {
   private readonly pool: Pool;
+  private readonly s3 = new S3Client({
+    region: readEnv('AWS_REGION', 'ap-northeast-2'),
+  });
 
   constructor(private readonly requestUser: RequestUserService) {
     this.pool = new Pool(this.databaseConfig());
@@ -81,7 +89,7 @@ export class BoardService implements OnModuleDestroy {
       `,
       [target || null],
     );
-    return result.rows.map((row) => this.toPostRecord(row));
+    return Promise.all(result.rows.map((row) => this.toPostRecord(row)));
   }
 
   async detail(id: string) {
@@ -223,6 +231,29 @@ export class BoardService implements OnModuleDestroy {
     return { id, status: 'deleted' };
   }
 
+  async createImageUploadUrl(dto: BoardImageUploadDto, authorization?: string) {
+    this.requestUser.requireAdmin(authorization);
+    if (!dto.contentType.startsWith('image/')) {
+      throw new BadRequestException('Only image uploads are allowed');
+    }
+
+    const bucket = this.s3Bucket();
+    const key = `${this.boardImagePrefix()}${new Date().toISOString().slice(0, 10)}/${randomUUID()}${this.safeImageExtension(dto.filename)}`;
+    const command = new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      ContentType: dto.contentType,
+    });
+    const expiresIn = readNumberEnv('S3_PRESIGNED_URL_EXPIRE_SECONDS', 300);
+
+    return {
+      bucket,
+      key,
+      uploadUrl: await getSignedUrl(this.s3, command, { expiresIn }),
+      expiresIn,
+    };
+  }
+
   private async replaceImages(client: PoolClient, postId: string, imageS3Keys: string[]) {
     await client.query('DELETE FROM ai_care.board_images WHERE post_id = $1', [postId]);
     for (const s3Key of imageS3Keys.filter(Boolean)) {
@@ -271,7 +302,7 @@ export class BoardService implements OnModuleDestroy {
     return this.toPostRecord(result.rows[0]);
   }
 
-  private toPostRecord(row: {
+  private async toPostRecord(row: {
     id: string;
     admin_id: string;
     category: string;
@@ -284,11 +315,17 @@ export class BoardService implements OnModuleDestroy {
     admin_nickname?: string;
     admin_role?: string;
     images?: BoardImageRecord[];
-  }): BoardPostRecord {
+  }): Promise<BoardPostRecord> {
     const admin = {
       nickname: row.admin_nickname ?? '관리자',
       role: row.admin_role ?? 'ADMIN',
     };
+    const images = await Promise.all(
+      (row.images ?? []).map(async (image) => ({
+        ...image,
+        url: await this.createImageDownloadUrl(image.s3Key),
+      })),
+    );
     return {
       id: row.id,
       userId: row.admin_id,
@@ -299,7 +336,7 @@ export class BoardService implements OnModuleDestroy {
       viewCount: Number(row.view_count ?? 0),
       createdAt: row.created_at,
       updatedAt: row.updated_at,
-      images: row.images ?? [],
+      images,
       admin,
       user: admin,
     };
@@ -307,7 +344,7 @@ export class BoardService implements OnModuleDestroy {
 
   private databaseConfig(): PoolConfig {
     const ssl = this.databaseSslConfig();
-    const connectionString = readEnv('DATABASE_URL');
+    const connectionString = this.kubernetesSafeDatabaseUrl();
     if (connectionString) {
       return { connectionString, ssl };
     }
@@ -325,6 +362,52 @@ export class BoardService implements OnModuleDestroy {
       password,
       ssl,
     };
+  }
+
+  private async createImageDownloadUrl(key: string) {
+    if (!key) return '';
+    const command = new GetObjectCommand({
+      Bucket: this.s3Bucket(),
+      Key: key,
+    });
+    return getSignedUrl(this.s3, command, {
+      expiresIn: readNumberEnv('S3_PRESIGNED_URL_EXPIRE_SECONDS', 300),
+    });
+  }
+
+  private s3Bucket() {
+    const bucket = readEnv('S3_BUCKET_NAME');
+    if (!bucket) {
+      throw new ServiceUnavailableException('S3_BUCKET_NAME is not configured');
+    }
+    return bucket;
+  }
+
+  private boardImagePrefix() {
+    return readEnv('S3_BOARD_IMAGE_PREFIX', 'board-images/').replace(/^\/+/, '').replace(/\/?$/, '/');
+  }
+
+  private safeImageExtension(filename: string) {
+    const extension = extname(filename).toLowerCase();
+    return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(extension) ? extension : '';
+  }
+
+  private kubernetesSafeDatabaseUrl(): string {
+    const connectionString = readEnv('DATABASE_URL');
+    if (!connectionString || !process.env.KUBERNETES_SERVICE_HOST) {
+      return connectionString;
+    }
+
+    try {
+      const host = new URL(connectionString).hostname.toLowerCase();
+      if (['localhost', '127.0.0.1', 'host.docker.internal'].includes(host)) {
+        return '';
+      }
+    } catch {
+      return connectionString;
+    }
+
+    return connectionString;
   }
 
   private databaseSslConfig(): PoolConfig['ssl'] {

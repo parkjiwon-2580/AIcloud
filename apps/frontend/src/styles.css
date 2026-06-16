@@ -647,10 +647,56 @@ button:disabled {
 
 .search-panel {
   display: grid;
-  grid-template-columns: minmax(150px, 190px) minmax(180px, 1fr) 1fr auto;
+  grid-template-columns: minmax(360px, 1.6fr) minmax(180px, 1fr) auto;
   gap: 12px;
   margin-bottom: 28px;
   padding: 16px;
+}
+
+.department-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.department-toggle label {
+  display: block;
+  color: inherit;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.department-toggle input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.department-toggle span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid #d4deeb;
+  border-radius: 999px;
+  background: #fff;
+  color: #344256;
+}
+
+.department-toggle input:checked + span {
+  border-color: var(--primary);
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(37, 99, 235, 0.2);
+}
+
+.department-toggle input:focus-visible + span {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.12);
 }
 
 .hospital-grid {
@@ -891,6 +937,49 @@ button:disabled {
   display: block;
   margin-top: 6px;
   color: var(--muted);
+}
+
+.image-upload-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.image-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.image-pill button {
+  min-height: 22px;
+  width: 22px;
+  padding: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #1d4ed8;
+  line-height: 1;
+}
+
+.post-image-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.post-image-strip img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #eef4fb;
 }
 
 .todo-grid {

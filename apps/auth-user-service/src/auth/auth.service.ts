@@ -244,7 +244,7 @@ export class AuthService implements OnModuleDestroy {
 
   private databaseConfig(): PoolConfig {
     const ssl = this.databaseSslConfig();
-    const connectionString = readEnv('DATABASE_URL');
+    const connectionString = this.kubernetesSafeDatabaseUrl();
     if (connectionString) {
       return { connectionString, ssl };
     }
@@ -262,6 +262,24 @@ export class AuthService implements OnModuleDestroy {
       password,
       ssl,
     };
+  }
+
+  private kubernetesSafeDatabaseUrl(): string {
+    const connectionString = readEnv('DATABASE_URL');
+    if (!connectionString || !process.env.KUBERNETES_SERVICE_HOST) {
+      return connectionString;
+    }
+
+    try {
+      const host = new URL(connectionString).hostname.toLowerCase();
+      if (['localhost', '127.0.0.1', 'host.docker.internal'].includes(host)) {
+        return '';
+      }
+    } catch {
+      return connectionString;
+    }
+
+    return connectionString;
   }
 
   private databaseSslConfig(): PoolConfig['ssl'] {

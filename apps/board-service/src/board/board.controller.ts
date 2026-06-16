@@ -1,6 +1,6 @@
 import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Query } from '@nestjs/common';
 import { BoardService } from './board.service';
-import { BoardPostDto } from './dto/board.dto';
+import { BoardImageUploadDto, BoardPostDto } from './dto/board.dto';
 
 @Controller('info')
 export class BoardController {
@@ -19,6 +19,14 @@ export class BoardController {
   @Post('posts')
   create(@Headers('authorization') authorization: string | undefined, @Body() dto: BoardPostDto) {
     return this.boardService.create(dto, authorization);
+  }
+
+  @Post('images/upload-url')
+  createImageUploadUrl(
+    @Headers('authorization') authorization: string | undefined,
+    @Body() dto: BoardImageUploadDto,
+  ) {
+    return this.boardService.createImageUploadUrl(dto, authorization);
   }
 
   @Patch('posts/:id')
