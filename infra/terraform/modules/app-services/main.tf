@@ -7,8 +7,9 @@ locals {
   reports_bucket_name         = var.reports_bucket_name != "" ? var.reports_bucket_name : "${local.name_prefix}-reports-${data.aws_caller_identity.current.account_id}"
   reports_s3_prefix           = var.reports_s3_prefix == "" ? "" : "${trimsuffix(var.reports_s3_prefix, "/")}/"
   board_images_s3_prefix      = var.board_images_s3_prefix == "" ? "" : "${trimsuffix(var.board_images_s3_prefix, "/")}/"
+  board_images_bucket_arn     = var.board_images_bucket_name != "" ? "arn:${data.aws_partition.current.partition}:s3:::${var.board_images_bucket_name}" : aws_s3_bucket.reports.arn
   reports_object_arn          = "${aws_s3_bucket.reports.arn}/${local.reports_s3_prefix}*"
-  board_images_object_arn     = "${aws_s3_bucket.reports.arn}/${local.board_images_s3_prefix}*"
+  board_images_object_arn     = "${local.board_images_bucket_arn}/${local.board_images_s3_prefix}*"
   reports_origin_id           = "${local.name_prefix}-reports-origin"
   oidc_provider_hostpath      = replace(var.eks_oidc_issuer_url, "https://", "")
   backend_log_group_name      = "/${var.project_name}/${var.environment}/backend"

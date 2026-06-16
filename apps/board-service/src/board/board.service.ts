@@ -41,7 +41,7 @@ interface BoardPostRecord {
 export class BoardService implements OnModuleDestroy {
   private readonly pool: Pool;
   private readonly s3 = new S3Client({
-    region: readEnv('AWS_REGION', 'ap-northeast-2'),
+    region: readEnv('S3_BUCKET_REGION', readEnv('AWS_REGION', 'ap-northeast-2')),
   });
 
   constructor(private readonly requestUser: RequestUserService) {

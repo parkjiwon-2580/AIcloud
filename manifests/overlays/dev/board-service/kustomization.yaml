@@ -13,7 +13,7 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service
-  newTag: 2ce84846fb36f4a6499b302b460431f703a8ffb8
+  newTag: fdbfb504b8560f9188dae807916be3367ccfe40e
 patches:
 - path: serviceaccount-delete-patch.yaml
 - path: serviceaccountname-patch.yaml

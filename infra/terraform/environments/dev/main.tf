@@ -227,6 +227,8 @@ module "app_services" {
   ecr_force_delete                  = var.ecr_force_delete
   reports_bucket_name               = var.reports_bucket_name
   reports_s3_prefix                 = var.reports_s3_prefix
+  board_images_bucket_name          = var.board_images_bucket_name
+  board_images_s3_prefix            = var.board_images_s3_prefix
   reports_bucket_force_destroy      = var.reports_bucket_force_destroy
   cloudwatch_log_retention_days     = var.cloudwatch_log_retention_days
   eks_oidc_provider_arn             = module.eks.eks_oidc_provider_arn
