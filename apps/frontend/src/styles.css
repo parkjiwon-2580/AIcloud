@@ -560,6 +560,58 @@ button,
   color: #991b1b;
 }
 
+.result-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.result-list li {
+  display: grid;
+  grid-template-columns: minmax(110px, 0.9fr) minmax(0, 1.7fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.result-list li:last-child {
+  border-bottom: 0;
+}
+
+.result-list strong {
+  color: var(--text);
+}
+
+.result-list span {
+  color: var(--muted);
+}
+
+.result-list em {
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-row span {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  background: #ffffff;
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
 .disclaimer {
   color: var(--muted);
   font-size: 13px;
