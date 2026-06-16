@@ -343,6 +343,18 @@ variable "reports_s3_prefix" {
   default     = "reports/"
 }
 
+variable "board_images_bucket_name" {
+  description = "Existing S3 bucket name for board image uploads."
+  type        = string
+  default     = "ai-care-dev-board-105959916837"
+}
+
+variable "board_images_s3_prefix" {
+  description = "S3 prefix for board image uploads."
+  type        = string
+  default     = "board-images/"
+}
+
 variable "domain_name" {
   description = "Root domain name managed by Route 53."
   type        = string

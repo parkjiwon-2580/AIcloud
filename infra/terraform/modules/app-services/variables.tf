@@ -37,6 +37,12 @@ variable "board_images_s3_prefix" {
   default     = "board-images/"
 }
 
+variable "board_images_bucket_name" {
+  description = "Existing S3 bucket name for board image uploads. When empty, board images use the reports bucket."
+  type        = string
+  default     = ""
+}
+
 variable "reports_bucket_cors_allowed_origins" {
   description = "Allowed browser origins for direct presigned S3 uploads/downloads."
   type        = list(string)
