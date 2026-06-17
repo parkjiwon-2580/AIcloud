@@ -345,6 +345,28 @@ button,
   width: auto;
 }
 
+.terms-box {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 14px 16px;
+  border: 1px solid #d4deeb;
+  border-radius: 14px;
+  background: #f8fbff;
+  color: #3f4f65;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.terms-box input {
+  width: 18px;
+  min-height: 18px;
+  margin-top: 2px;
+  accent-color: var(--primary);
+}
+
 .form-divider {
   height: 1px;
   background: var(--line);
@@ -1022,16 +1044,29 @@ button:disabled {
 
 .post-image-strip {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(96px, 160px));
   gap: 8px;
+  align-items: start;
+  justify-content: start;
+  max-width: 520px;
 }
 
 .post-image-strip img {
   width: 100%;
   aspect-ratio: 4 / 3;
-  border-radius: 12px;
+  max-height: 120px;
+  border-radius: 8px;
   object-fit: cover;
   background: #eef4fb;
+}
+
+.info-detail .post-image-strip {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 180px));
+  max-width: 580px;
+}
+
+.info-detail .post-image-strip img {
+  max-height: 135px;
 }
 
 .todo-grid {

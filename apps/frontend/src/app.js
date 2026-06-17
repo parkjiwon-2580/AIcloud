@@ -465,6 +465,12 @@ document.getElementById("signupForm").addEventListener("submit", async (event) =
     return;
   }
 
+  if (!form.elements.termsAccepted?.checked) {
+    alert("약관 및 개인정보 처리 안내를 확인해야 회원가입할 수 있습니다.");
+    form.elements.termsAccepted?.focus();
+    return;
+  }
+
   try {
     const data = formData(form);
     await authApi.signup(data);
