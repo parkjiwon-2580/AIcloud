@@ -27,18 +27,116 @@ interface GooglePlaceDetails {
   regularOpeningHours?: GooglePlaceOpeningHours;
 }
 
+const HANGUL_BASE = 0xac00;
+const HANGUL_END = 0xd7a3;
+const JUNG_COUNT = 21;
+const JONG_COUNT = 28;
+const CHO = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+const JUNG = ['ㅏ', 'ㅐ', 'ㅑ', 'ㅒ', 'ㅓ', 'ㅔ', 'ㅕ', 'ㅖ', 'ㅗ', 'ㅘ', 'ㅙ', 'ㅚ', 'ㅛ', 'ㅜ', 'ㅝ', 'ㅞ', 'ㅟ', 'ㅠ', 'ㅡ', 'ㅢ', 'ㅣ'];
+const JONG = ['', 'ㄱ', 'ㄲ', 'ㄳ', 'ㄴ', 'ㄵ', 'ㄶ', 'ㄷ', 'ㄹ', 'ㄺ', 'ㄻ', 'ㄼ', 'ㄽ', 'ㄾ', 'ㄿ', 'ㅀ', 'ㅁ', 'ㅂ', 'ㅄ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'];
+const MODERN_JAMO_TO_COMPATIBILITY: Record<string, string> = {
+  ᄀ: 'ㄱ',
+  ᄁ: 'ㄲ',
+  ᄂ: 'ㄴ',
+  ᄃ: 'ㄷ',
+  ᄄ: 'ㄸ',
+  ᄅ: 'ㄹ',
+  ᄆ: 'ㅁ',
+  ᄇ: 'ㅂ',
+  ᄈ: 'ㅃ',
+  ᄉ: 'ㅅ',
+  ᄊ: 'ㅆ',
+  ᄋ: 'ㅇ',
+  ᄌ: 'ㅈ',
+  ᄍ: 'ㅉ',
+  ᄎ: 'ㅊ',
+  ᄏ: 'ㅋ',
+  ᄐ: 'ㅌ',
+  ᄑ: 'ㅍ',
+  ᄒ: 'ㅎ',
+  ᅡ: 'ㅏ',
+  ᅢ: 'ㅐ',
+  ᅣ: 'ㅑ',
+  ᅤ: 'ㅒ',
+  ᅥ: 'ㅓ',
+  ᅦ: 'ㅔ',
+  ᅧ: 'ㅕ',
+  ᅨ: 'ㅖ',
+  ᅩ: 'ㅗ',
+  ᅪ: 'ㅘ',
+  ᅫ: 'ㅙ',
+  ᅬ: 'ㅚ',
+  ᅭ: 'ㅛ',
+  ᅮ: 'ㅜ',
+  ᅯ: 'ㅝ',
+  ᅰ: 'ㅞ',
+  ᅱ: 'ㅟ',
+  ᅲ: 'ㅠ',
+  ᅳ: 'ㅡ',
+  ᅴ: 'ㅢ',
+  ᅵ: 'ㅣ',
+  ᆨ: 'ㄱ',
+  ᆩ: 'ㄲ',
+  ᆪ: 'ㄳ',
+  ᆫ: 'ㄴ',
+  ᆬ: 'ㄵ',
+  ᆭ: 'ㄶ',
+  ᆮ: 'ㄷ',
+  ᆯ: 'ㄹ',
+  ᆰ: 'ㄺ',
+  ᆱ: 'ㄻ',
+  ᆲ: 'ㄼ',
+  ᆳ: 'ㄽ',
+  ᆴ: 'ㄾ',
+  ᆵ: 'ㄿ',
+  ᆶ: 'ㅀ',
+  ᆷ: 'ㅁ',
+  ᆸ: 'ㅂ',
+  ᆹ: 'ㅄ',
+  ᆺ: 'ㅅ',
+  ᆻ: 'ㅆ',
+  ᆼ: 'ㅇ',
+  ᆽ: 'ㅈ',
+  ᆾ: 'ㅊ',
+  ᆿ: 'ㅋ',
+  ᇀ: 'ㅌ',
+  ᇁ: 'ㅍ',
+  ᇂ: 'ㅎ',
+};
+
+const DEPARTMENT_ALIASES: Array<{ department: string; aliases: string[] }> = [
+  {
+    department: '소아청소년과',
+    aliases: ['소아청소년과', '소아과', '소청과', '소아', '아기', '아이', '영유아', '어린이', '키즈'],
+  },
+  {
+    department: '이비인후과',
+    aliases: ['이비인후과', '이비인후', '이빈후과', '귀', '코', '목', '중이염', '비염'],
+  },
+  {
+    department: '피부과',
+    aliases: ['피부과', '피부', '발진', '두드러기', '아토피'],
+  },
+  {
+    department: '응급실',
+    aliases: ['응급실', '응급', '야간', '심야', '응급의료센터'],
+  },
+];
+
 @Injectable()
 export class HospitalService {
   private readonly logger = new Logger(HospitalService.name);
 
   async recommend(department = '소아청소년과', region = '서울', keyword = ''): Promise<HospitalRecommendation[]> {
+    const normalizedKeyword = this.normalizeKeyword(keyword);
+    const normalizedDepartment = this.normalizeDepartment(`${department} ${normalizedKeyword}`) || normalizedKeyword || department;
     const apiKey = readEnv('MAP_API_KEY');
     const provider = readEnv('MAP_API_PROVIDER', apiKey ? 'kakao' : 'mock');
     if (provider === 'kakao' && apiKey) {
       return this.searchKakao(department, region, keyword, apiKey);
     }
     this.logger.log('MAP_API_KEY is empty or MAP_API_PROVIDER=mock. Returning mock hospital recommendations.');
-    return this.mockRecommendations(department, region);
+    return this.mockRecommendations(normalizedDepartment, region);
   }
 
   private async searchKakao(
@@ -49,8 +147,8 @@ export class HospitalService {
   ): Promise<HospitalRecommendation[]> {
     const baseUrl = readEnv('MAP_API_BASE_URL', 'https://dapi.kakao.com');
     const timeout = readNumberEnv('MAP_API_TIMEOUT_MS', 3000);
-    const normalizedDepartment = this.normalizeDepartment(department);
     const normalizedKeyword = this.normalizeKeyword(keyword);
+    const normalizedDepartment = this.normalizeDepartment(`${department} ${normalizedKeyword}`);
     const directNameSearch = this.isDirectHospitalName(normalizedKeyword);
     const query = this.buildKakaoQuery(region, normalizedDepartment, normalizedKeyword);
     const response = await axios.get(`${baseUrl}/v2/local/search/keyword.json`, {
@@ -152,27 +250,29 @@ export class HospitalService {
   }
 
   private normalizeDepartment(department: string): string {
-    const value = String(department || '').replace(/\s+/g, '');
+    const value = String(department || '').normalize('NFKC').replace(/\s+/g, '');
     if (!value || value === '전체' || value === '전체병원') return '';
-    if (/소아|아기|아이|영유아|어린이|키즈/.test(value)) return '소아청소년과';
-    if (/응급|야간|심야/.test(value)) return '응급실';
-    if (/이비인후|귀|코|목|중이염|비염/.test(value)) return '이비인후과';
-    if (/피부|발진|두드러기|아토피/.test(value)) return '피부과';
+    const matchedDepartment = DEPARTMENT_ALIASES.find(({ aliases }) =>
+      aliases.some((alias) => this.matchesKoreanSearch(value, alias)),
+    );
+    if (matchedDepartment) return matchedDepartment.department;
     return department || '';
   }
 
   private normalizeKeyword(keyword: string): string {
-    return String(keyword || '').trim().replace(/\s+/g, ' ');
+    const value = String(keyword || '').normalize('NFKC').trim().replace(/\s+/g, ' ');
+    return this.normalizeDepartment(value) || value;
   }
 
   private buildKakaoQuery(region: string, department: string, keyword: string): string {
-    if (keyword && department && !this.isDirectHospitalName(keyword)) return `${region} ${keyword} ${department}`;
+    if (keyword && department && !this.isDirectHospitalName(keyword)) return `${region} ${department}`;
     if (keyword) return `${region} ${keyword}`;
     return `${region} ${department || '병원'}`;
   }
 
   private isDirectHospitalName(keyword: string): boolean {
-    return /병원|의원|클리닉|센터|메디컬|한의원|치과/.test(keyword.replace(/\s+/g, ''));
+    const value = keyword.replace(/\s+/g, '');
+    return /병원|의원|클리닉|센터|메디컬|한의원|치과/.test(value) || this.matchesKoreanSearch(value, '병원');
   }
 
   private matchesDepartment(item: Record<string, string>, department: string): boolean {
@@ -184,7 +284,7 @@ export class HospitalService {
     if (department === '응급실') {
       return /응급실|응급의료센터|응급|권역응급|지역응급/.test(source);
     }
-    return source.includes(department.replace(/\s+/g, ''));
+    return this.matchesKoreanSearch(source, department);
   }
 
   private matchesRegion(item: Record<string, string>, region: string): boolean {
@@ -193,14 +293,67 @@ export class HospitalService {
 
     const address = `${item.road_address_name || ''} ${item.address_name || ''}`.replace(/\s+/g, '');
     const regionTokens = normalizedRegion.match(/[가-힣]+(?:시|군|구|읍|면|동|로|길)/g) || [];
-    if (!regionTokens.length) return address.includes(normalizedRegion);
+    if (!regionTokens.length) return this.matchesKoreanSearch(address, normalizedRegion);
 
-    return regionTokens.every((token) => address.includes(token));
+    return regionTokens.every((token) => this.matchesKoreanSearch(address, token));
   }
 
   private hasRegionScope(region: string): boolean {
     const normalizedRegion = String(region || '').replace(/\s+/g, '');
-    return /[가-힣]+(?:시|군|구|읍|면|동)/.test(normalizedRegion);
+    return /[가-힣]+(?:시|군|구|읍|면|동)/.test(normalizedRegion) || /^[ㄱ-ㅎㅏ-ㅣ]+$/.test(normalizedRegion);
+  }
+
+  private matchesKoreanSearch(source: string, query: string): boolean {
+    const sourceInfo = this.koreanSearchInfo(source);
+    const queryInfo = this.koreanSearchInfo(query);
+    if (!sourceInfo.compact || !queryInfo.compact) return false;
+    if (sourceInfo.compact.includes(queryInfo.compact) || queryInfo.compact.includes(sourceInfo.compact)) return true;
+
+    const jamoNeedle = sourceInfo.hasStandaloneJamo ? sourceInfo.compact : queryInfo.hasStandaloneJamo ? queryInfo.compact : '';
+    const hangulInfo = sourceInfo.hasStandaloneJamo ? queryInfo : sourceInfo;
+    if (!jamoNeedle) return false;
+
+    return hangulInfo.initials.includes(jamoNeedle) || hangulInfo.jamo.includes(jamoNeedle);
+  }
+
+  private koreanSearchInfo(value: string): { compact: string; initials: string; jamo: string; hasStandaloneJamo: boolean } {
+    const compact = String(value || '')
+      .normalize('NFKC')
+      .toLowerCase()
+      .replace(/[ᄀ-ᇂ]/g, (char) => MODERN_JAMO_TO_COMPATIBILITY[char] || char)
+      .replace(/[^0-9a-z가-힣ㄱ-ㅎㅏ-ㅣ]/g, '');
+
+    return {
+      compact,
+      initials: this.toInitialConsonants(compact),
+      jamo: this.toCompatibilityJamo(compact),
+      hasStandaloneJamo: /[ㄱ-ㅎㅏ-ㅣ]/.test(compact),
+    };
+  }
+
+  private toInitialConsonants(value: string): string {
+    return [...value]
+      .map((char) => {
+        const code = char.charCodeAt(0);
+        if (code < HANGUL_BASE || code > HANGUL_END) return char;
+        const index = code - HANGUL_BASE;
+        return CHO[Math.floor(index / (JUNG_COUNT * JONG_COUNT))];
+      })
+      .join('');
+  }
+
+  private toCompatibilityJamo(value: string): string {
+    return [...value]
+      .map((char) => {
+        const code = char.charCodeAt(0);
+        if (code < HANGUL_BASE || code > HANGUL_END) return char;
+        const index = code - HANGUL_BASE;
+        const cho = Math.floor(index / (JUNG_COUNT * JONG_COUNT));
+        const jung = Math.floor((index % (JUNG_COUNT * JONG_COUNT)) / JONG_COUNT);
+        const jong = index % JONG_COUNT;
+        return `${CHO[cho]}${JUNG[jung]}${JONG[jong]}`;
+      })
+      .join('');
   }
 
   private mockRecommendations(department: string, region: string): HospitalRecommendation[] {
