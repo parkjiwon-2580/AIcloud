@@ -817,13 +817,14 @@ function renderOpenBadge(isOpen) {
 }
 
 async function loadHospitals(form = { department: "소아청소년과", region: HOSPITAL_SEARCH_FALLBACK_REGION }) {
-  const department = normalizeHospitalKeyword(form.department, "");
+  const rawDepartment = String(form.department || "").trim();
+  const department = normalizeHospitalKeyword(rawDepartment, "");
   const region = normalizeLocationQuery(form.region || HOSPITAL_SEARCH_FALLBACK_REGION);
-  const query = `${region} ${department || "전체 병원"}`;
+  const query = `${region} ${department || rawDepartment || "전체 병원"}`;
   let hospitals = [];
   renderNotice("hospitalList", "병원을 검색하고 있습니다", `${query} 기준으로 조회 중입니다.`);
   try {
-    hospitals = await hospitalApi.recommend({ department, keyword: "", region });
+    hospitals = await hospitalApi.recommend({ department, keyword: rawDepartment, region });
   } catch (apiError) {
     renderNotice("hospitalList", "병원 추천을 불러올 수 없습니다", friendlyApiError(apiError, "hospital"));
     return;
