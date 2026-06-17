@@ -476,3 +476,17 @@ variable "enable_karpenter" {
   type    = bool
   default = false
 }
+
+variable "kakao_rest_api_key" {
+  description = "Kakao REST API key for hospital recommendation search. Set with TF_VAR_kakao_rest_api_key; do not commit real values."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "kakao_js_api_key" {
+  description = "Kakao JavaScript API key for frontend map SDK usage. Set with TF_VAR_kakao_js_api_key; do not commit real values."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

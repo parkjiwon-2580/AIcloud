@@ -90,3 +90,8 @@ create_github_oidc_provider = false
 github_oidc_provider_arn    = ""
 github_repository           = "zipgaskkukdp/hospital-service-app"
 github_branch               = "main"
+
+# Kakao API keys are intentionally omitted from this example.
+# Set them through environment variables before terraform apply:
+#   TF_VAR_kakao_rest_api_key
+#   TF_VAR_kakao_js_api_key

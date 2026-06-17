@@ -345,6 +345,28 @@ button,
   width: auto;
 }
 
+.terms-box {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  align-items: start;
+  padding: 14px 16px;
+  border: 1px solid #d4deeb;
+  border-radius: 14px;
+  background: #f8fbff;
+  color: #3f4f65;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.55;
+}
+
+.terms-box input {
+  width: 18px;
+  min-height: 18px;
+  margin-top: 2px;
+  accent-color: var(--primary);
+}
+
 .form-divider {
   height: 1px;
   background: var(--line);

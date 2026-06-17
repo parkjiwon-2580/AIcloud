@@ -81,7 +81,7 @@
                     type="text"
                     inputmode="numeric"
                     maxlength="4"
-                    placeholder="연도 검색"
+                    placeholder="연도"
                     list="birthYearOptions"
                     data-birthdate-part="year"
                     aria-label="아이 생년월일 연도"
@@ -99,6 +99,12 @@
                 </select>
               </label>
             </div>
+            <label class="terms-box">
+              <input name="termsAccepted" type="checkbox" required />
+              <span>
+                개인정보 수집 및 이용, 민감정보 처리, AI 문진 결과가 의료진의 진단을 대체하지 않는다는 안내를 확인했습니다.
+              </span>
+            </label>
             <button class="primary-button" type="submit">회원가입</button>
           </form>
           <p class="auth-switch">이미 계정이 있으신가요? <a href="#/login">로그인</a></p>
@@ -148,7 +154,6 @@
       <section class="page app-page" id="consultationPage">
         <div class="content-narrow">
           <header class="page-header">
-            <p class="step-label">문진 입력</p>
             <h1>아이의 증상을 입력해 주세요</h1>
             <p class="subtle">아이 이름과 문진 원문 같은 민감정보는 암호화해 별도 보관합니다.</p>
           </header>
@@ -232,54 +237,54 @@
       </section>
 
       <section class="page app-page" id="mypagePage">
-        <div class="content-wide mypage-layout">
-          <aside class="profile-card">
-            <div class="profile-logo" aria-label="aicare 아이 돌봄 클라우드">
-              <span class="logo-cloud">aicare</span>
-              <span class="logo-caption">아이 돌봄 클라우드</span>
-            </div>
+        <div class="content-wide">
+          <header class="page-header">
             <h1>마이페이지</h1>
-            <div class="profile-summary" id="meBox"></div>
-          </aside>
-          <section class="card">
-            <div class="section-title">
-              <h2>아이 정보 관리</h2>
-            </div>
-            <form id="childForm">
-              <label>
-                아이 이름
-                <input name="name" placeholder="아이 이름" required />
-              </label>
-              <div class="two-col birth-gender-row">
-                <label>
-                  아이의 생년월일
-                  <input name="birthDate" type="hidden" data-birthdate-value />
-                  <div class="birthdate-picker" data-birthdate-picker>
-                    <input
-                      type="text"
-                      inputmode="numeric"
-                      maxlength="4"
-                      placeholder="연도 검색"
-                      list="birthYearOptions"
-                      data-birthdate-part="year"
-                      aria-label="아이 생년월일 연도"
-                    />
-                    <select data-birthdate-part="month" aria-label="아이 생년월일 월"></select>
-                    <select data-birthdate-part="day" aria-label="아이 생년월일 일"></select>
-                  </div>
-                </label>
-                <label>
-                  성별
-                  <select name="gender" required>
-                    <option value="male">남자아이</option>
-                    <option value="female">여자아이</option>
-                  </select>
-                </label>
+          </header>
+          <div class="mypage-layout">
+            <aside class="profile-card">
+              <div class="profile-summary" id="meBox"></div>
+            </aside>
+            <section class="card">
+              <div class="section-title">
+                <h2>아이 정보 관리</h2>
               </div>
-              <button class="primary-button" type="submit">아이 추가</button>
-            </form>
-            <div class="child-grid compact" id="childList"></div>
-          </section>
+              <form id="childForm">
+                <label>
+                  아이 이름
+                  <input name="name" placeholder="아이 이름" required />
+                </label>
+                <div class="two-col birth-gender-row">
+                  <label>
+                    아이의 생년월일
+                    <input name="birthDate" type="hidden" data-birthdate-value />
+                    <div class="birthdate-picker" data-birthdate-picker>
+                      <input
+                        type="text"
+                        inputmode="numeric"
+                        maxlength="4"
+                        placeholder="연도 검색"
+                        list="birthYearOptions"
+                        data-birthdate-part="year"
+                        aria-label="아이 생년월일 연도"
+                      />
+                      <select data-birthdate-part="month" aria-label="아이 생년월일 월"></select>
+                      <select data-birthdate-part="day" aria-label="아이 생년월일 일"></select>
+                    </div>
+                  </label>
+                  <label>
+                    성별
+                    <select name="gender" required>
+                      <option value="male">남자아이</option>
+                      <option value="female">여자아이</option>
+                    </select>
+                  </label>
+                </div>
+                <button class="primary-button" type="submit">아이 추가</button>
+              </form>
+              <div class="child-grid compact" id="childList"></div>
+            </section>
+          </div>
         </div>
       </section>
 
@@ -290,7 +295,6 @@
               <span class="baby-face">아이</span>
             </div>
             <div>
-              <p class="step-label">정보공유</p>
               <h1>월령별 아이 건강 가이드</h1>
               <p class="subtle">아이의 월령에 맞는 예방접종, 발달, 영양, 주의사항 정보를 확인해보세요.</p>
               <div class="age-filter-bar" id="infoAgeFilters" aria-label="월령 필터"></div>

@@ -352,6 +352,10 @@ module "helm" {
 module "k8s" {
   source = "../../modules/k8s"
 
+  app_namespace      = var.backend_service_account_namespace
+  kakao_rest_api_key = var.kakao_rest_api_key
+  kakao_js_api_key   = var.kakao_js_api_key
+
   depends_on = [
     module.eks,
     module.helm
