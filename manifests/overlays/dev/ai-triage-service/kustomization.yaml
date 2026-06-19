@@ -13,7 +13,7 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service
-  newTag: c625866d7523d36d46e5419427493eafd44248d1
+  newTag: 4c584401043b479b57142d97adabed01ee58702b
 patches:
 - path: serviceaccount-delete-patch.yaml
 - path: serviceaccountname-patch.yaml
