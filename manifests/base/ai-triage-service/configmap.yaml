@@ -10,6 +10,7 @@ data:
   TZ: "Asia/Seoul"
   AWS_REGION: "ap-northeast-2"
   BEDROCK_MODEL_ID: "global.anthropic.claude-haiku-4-5-20251001-v1:0"
+  BEDROCK_MAX_TOKENS: "4000"
   BEDROCK_MOCK: "false"
   BEDROCK_FALLBACK_TO_MOCK: "false"
   # S3 설정
