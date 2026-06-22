@@ -12,7 +12,7 @@ data:
   MAP_API_PROVIDER: "kakao"
   MAP_API_BASE_URL: "https://dapi.kakao.com"
   MAP_API_TIMEOUT_MS: "3000"
-  GOOGLE_PLACES_OPENING_HOURS_LIMIT: "0"
+  GOOGLE_PLACES_OPENING_HOURS_LIMIT: "5"
   # 실제 S3 인프라 설정 반영
   S3_BUCKET_NAME: "ai-care-dev-reports-105959916837"
   S3_BOARD_IMAGE_PREFIX: "reports/"
