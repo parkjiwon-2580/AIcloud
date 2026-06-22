@@ -133,7 +133,13 @@ export class HospitalService {
     const apiKey = readEnv('MAP_API_KEY');
     const provider = readEnv('MAP_API_PROVIDER', apiKey ? 'kakao' : 'mock');
     if (provider === 'kakao' && apiKey) {
-      return this.searchKakao(department, region, keyword, apiKey);
+      try {
+        const hospitals = await this.searchKakao(department, region, keyword, apiKey);
+        if (hospitals.length) return hospitals;
+        this.logger.warn(`Kakao hospital search returned no results. Falling back to mock recommendations. region=${region}, department=${department}, keyword=${keyword}`);
+      } catch (error) {
+        this.logger.warn(`Kakao hospital search failed. Falling back to mock recommendations. ${this.errorMessage(error)}`);
+      }
     }
     this.logger.log('MAP_API_KEY is empty or MAP_API_PROVIDER=mock. Returning mock hospital recommendations.');
     return this.mockRecommendations(normalizedDepartment, region);
@@ -151,20 +157,17 @@ export class HospitalService {
     const normalizedDepartment = this.normalizeDepartment(`${department} ${normalizedKeyword}`);
     const directNameSearch = this.isDirectHospitalName(normalizedKeyword);
     const query = this.buildKakaoQuery(region, normalizedDepartment, normalizedKeyword);
-    const response = await axios.get(`${baseUrl}/v2/local/search/keyword.json`, {
-      params: { query, category_group_code: 'HP8', size: 10 },
-      headers: { Authorization: `KakaoAK ${apiKey}` },
-      timeout,
-    });
-
-    const documents = (response.data.documents ?? []) as Array<Record<string, string>>;
+    const documents = await this.searchKakaoDocuments(baseUrl, apiKey, timeout, query, true);
+    const fallbackDocuments = documents.length
+      ? documents
+      : await this.searchKakaoDocuments(baseUrl, apiKey, timeout, query, false);
     const regionMatched = documents.filter((item) => this.matchesRegion(item, region));
     const hasRegionScope = this.hasRegionScope(region);
-    const scopedDocuments = hasRegionScope ? regionMatched : documents;
+    const scopedDocuments = hasRegionScope && regionMatched.length ? regionMatched : fallbackDocuments;
     const filtered = directNameSearch
       ? scopedDocuments
       : scopedDocuments.filter((item) => this.matchesDepartment(item, normalizedDepartment || normalizedKeyword));
-    const results = filtered.length ? filtered : scopedDocuments;
+    const results = this.fillResults(filtered, scopedDocuments, 5);
 
     const hospitals = results.slice(0, 5).map((item: Record<string, string>, index: number) => ({
       name: item.place_name,
@@ -179,6 +182,54 @@ export class HospitalService {
     }));
 
     return this.enrichOpeningHours(hospitals);
+  }
+
+  private fillResults(
+    primary: Array<Record<string, string>>,
+    fallback: Array<Record<string, string>>,
+    limit: number,
+  ): Array<Record<string, string>> {
+    const seen = new Set<string>();
+    const results: Array<Record<string, string>> = [];
+
+    for (const item of [...primary, ...fallback]) {
+      const key = item.id || item.place_url || `${item.place_name}|${item.road_address_name || item.address_name}`;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      results.push(item);
+      if (results.length >= limit) break;
+    }
+
+    return results;
+  }
+
+  private async searchKakaoDocuments(
+    baseUrl: string,
+    apiKey: string,
+    timeout: number,
+    query: string,
+    hospitalCategoryOnly: boolean,
+  ): Promise<Array<Record<string, string>>> {
+    const response = await axios.get(`${baseUrl}/v2/local/search/keyword.json`, {
+      params: {
+        query,
+        ...(hospitalCategoryOnly ? { category_group_code: 'HP8' } : {}),
+        size: 10,
+      },
+      headers: { Authorization: `KakaoAK ${apiKey}` },
+      timeout,
+    });
+
+    return (response.data.documents ?? []) as Array<Record<string, string>>;
+  }
+
+  private errorMessage(error: unknown): string {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const bodyMessage = error.response?.data?.message || error.response?.data?.error;
+      return [status ? `status=${status}` : '', bodyMessage || error.message].filter(Boolean).join(' ');
+    }
+    return error instanceof Error ? error.message : String(error);
   }
 
   private async enrichOpeningHours(hospitals: HospitalRecommendation[]): Promise<HospitalRecommendation[]> {
@@ -380,6 +431,22 @@ export class HospitalService {
         openingHours: '09:00-21:00',
         isOpen: false,
         address: `${region} 안심대로 33`,
+        department,
+      },
+      {
+        name: '맑은숨 이비인후과의원',
+        distance: '3.1km',
+        openingHours: '09:00-18:30',
+        isOpen: true,
+        address: `${region} 숨편한길 18`,
+        department,
+      },
+      {
+        name: '365 아이응급의료센터',
+        distance: '3.7km',
+        openingHours: '24시간 진료',
+        isOpen: true,
+        address: `${region} 안심로 119`,
         department,
       },
     ];
