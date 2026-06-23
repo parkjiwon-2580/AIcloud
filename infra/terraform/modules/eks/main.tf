@@ -8,6 +8,21 @@ locals {
 
 data "aws_region" "current" {}
 
+resource "aws_kms_key" "eks_secrets" {
+  description             = "KMS key for ${local.cluster_name} Kubernetes secret encryption."
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = merge(var.tags, {
+    Name = "${local.cluster_name}-secrets-kms"
+  })
+}
+
+resource "aws_kms_alias" "eks_secrets" {
+  name          = "alias/${local.cluster_name}-secrets"
+  target_key_id = aws_kms_key.eks_secrets.key_id
+}
+
 resource "aws_iam_role" "cluster" {
   name = "${local.cluster_name}-cluster-role"
 
@@ -48,10 +63,18 @@ resource "aws_eks_cluster" "this" {
   }
 
   access_config {
-  authentication_mode = var.authentication_mode
-}
+    authentication_mode = var.authentication_mode
+  }
 
-  enabled_cluster_log_types = ["api", "audit", "authenticator"]
+  enabled_cluster_log_types = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+
+  encryption_config {
+    provider {
+      key_arn = aws_kms_key.eks_secrets.arn
+    }
+
+    resources = ["secrets"]
+  }
 
   depends_on = [aws_iam_role_policy_attachment.cluster_policy]
 

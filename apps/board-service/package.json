@@ -21,5 +21,9 @@
     "@nestjs/cli": "^11.0.21",
     "@types/node": "^22.10.7",
     "typescript": "^5.4.5"
+  },
+  "overrides": {
+    "multer": "2.2.0",
+    "picomatch": "4.0.4"
   }
 }

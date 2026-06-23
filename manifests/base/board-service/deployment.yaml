@@ -2,8 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: board-service
+  namespace: service
   labels:
     app: board-service
+    app.kubernetes.io/name: board-service
+    app.kubernetes.io/part-of: ai-care
+    app.kubernetes.io/component: backend
 spec:
   replicas: 1
   selector:
@@ -13,15 +17,55 @@ spec:
     metadata:
       labels:
         app: board-service
+        app.kubernetes.io/name: board-service
+        app.kubernetes.io/part-of: ai-care
+        app.kubernetes.io/component: backend
     spec:
       serviceAccountName: backend
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: board-service
         image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/board-service:latest # 나중에 치환될 부분
         ports:
         - containerPort: 8080
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 20
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         envFrom:
         - configMapRef:
             name: board-service-config
         - secretRef:
             name: board-service-secret
+      volumes:
+      - name: tmp
+        emptyDir: {}

@@ -2,8 +2,12 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: auth-user-service
+  namespace: service
   labels:
     app: auth-user-service
+    app.kubernetes.io/name: auth-user-service
+    app.kubernetes.io/part-of: ai-care
+    app.kubernetes.io/component: backend
 spec:
   replicas: 2
   selector:
@@ -13,14 +17,55 @@ spec:
     metadata:
       labels:
         app: auth-user-service
+        app.kubernetes.io/name: auth-user-service
+        app.kubernetes.io/part-of: ai-care
+        app.kubernetes.io/component: backend
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: auth-user-service
         image: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/auth-user-service:latest # 나중에 치환될 부분
         ports:
         - containerPort: 8080
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+          capabilities:
+            drop:
+            - ALL
+        resources:
+          requests:
+            cpu: 100m
+            memory: 128Mi
+          limits:
+            cpu: 500m
+            memory: 512Mi
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 20
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
         envFrom:
         - configMapRef:
             name: auth-user-service-config
         - secretRef:
             name: auth-user-service-secret
+      volumes:
+      - name: tmp
+        emptyDir: {}

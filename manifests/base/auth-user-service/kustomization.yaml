@@ -6,4 +6,5 @@ namespace: service
 resources:
   - deployment.yaml
   - configmap.yaml
+  - networkpolicy.yaml
   - service.yaml

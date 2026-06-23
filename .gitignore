@@ -10,6 +10,8 @@ coverage/
 .terraform/
 terraform.tfstate
 terraform.tfstate.*
+*.tfstate
+*.tfstate.*
 terraform.tfvars
 *.tfvars
 tfvars.env.local
@@ -38,3 +40,9 @@ iam_policy.*
 trust-policy.*
 
 .idea/
+
+# Security validation generated outputs
+security/02-baseline/
+security/03-remediation/
+security/04-retest/
+security/05-evidence/

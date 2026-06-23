@@ -2,6 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: ai-triage-service
+  namespace: service
+  labels:
+    app: ai-triage-service
+    app.kubernetes.io/name: ai-triage-service
+    app.kubernetes.io/part-of: ai-care
+    app.kubernetes.io/component: backend
   annotations:
     alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port

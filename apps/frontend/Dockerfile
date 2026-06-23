@@ -5,15 +5,15 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 # 패키지 파일 먼저 복사 후 설치 (캐시 최적화)
-COPY package.json package-lock.json* ./
-RUN npm install
+COPY package.json package-lock.json ./
+RUN npm ci
 
 # 나머지 전체 코드 복사 및 빌드
 COPY . .
 RUN npm run build
 
 # 2단계: 가볍고 빠른 Nginx 웹 서버를 통해 빌드된 정적 파일 서빙
-FROM nginx:alpine
+FROM nginxinc/nginx-unprivileged:alpine
 
 # Nginx의 기본 웹 호스팅 디렉토리로 빌드 결과물 복사
 # 🚨 주의: Vite는 'dist', Create React App은 'build' 폴더를 생성합니다. 
@@ -21,8 +21,8 @@ FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# 컨테이너 포트 80 개방 (k8s deployment의 포트와 일치시킴)
-EXPOSE 80
+# 컨테이너는 non-root 포트로 실행하고, Kubernetes Service에서 80 -> 8080으로 라우팅합니다.
+EXPOSE 8080
 
 # Nginx 실행
 CMD ["nginx", "-g", "daemon off;"]

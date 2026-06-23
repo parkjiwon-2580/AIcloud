@@ -25,5 +25,10 @@
     "@types/node": "^22.10.7",
     "@types/pdfkit": "^0.17.6",
     "typescript": "^5.4.5"
+  },
+  "overrides": {
+    "form-data": "4.0.6",
+    "multer": "2.2.0",
+    "picomatch": "4.0.4"
   }
 }

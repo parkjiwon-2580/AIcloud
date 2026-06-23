@@ -1,0 +1,41 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: hospital-recommendation-service-network-policy
+  namespace: service
+  labels:
+    app: hospital-recommendation-service
+    app.kubernetes.io/name: hospital-recommendation-service
+    app.kubernetes.io/part-of: ai-care
+    app.kubernetes.io/component: backend
+spec:
+  podSelector:
+    matchLabels:
+      app: hospital-recommendation-service
+  policyTypes:
+  - Ingress
+  - Egress
+  ingress:
+  - from:
+    - namespaceSelector: {}
+    ports:
+    - protocol: TCP
+      port: 8080
+  egress:
+  - to:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: kube-system
+    ports:
+    - protocol: UDP
+      port: 53
+    - protocol: TCP
+      port: 53
+  - to:
+    - ipBlock:
+        cidr: 0.0.0.0/0
+        except:
+        - 169.254.169.254/32
+    ports:
+    - protocol: TCP
+      port: 443

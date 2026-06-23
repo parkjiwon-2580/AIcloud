@@ -2,6 +2,12 @@ apiVersion: v1
 kind: Service
 metadata:
   name: board-service
+  namespace: service
+  labels:
+    app: board-service
+    app.kubernetes.io/name: board-service
+    app.kubernetes.io/part-of: ai-care
+    app.kubernetes.io/component: backend
   annotations:
     alb.ingress.kubernetes.io/healthcheck-path: /health
     alb.ingress.kubernetes.io/healthcheck-port: traffic-port

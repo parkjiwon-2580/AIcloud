@@ -2,6 +2,12 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: board-service-config
+  namespace: service
+  labels:
+    app: board-service
+    app.kubernetes.io/name: board-service
+    app.kubernetes.io/part-of: ai-care
+    app.kubernetes.io/component: backend
 data:
   APP_ENV: "dev"
   PORT: "8080"

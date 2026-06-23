@@ -3,17 +3,36 @@ data "aws_partition" "current" {}
 data "aws_region" "current" {}
 
 locals {
-  name_prefix                 = "${var.project_name}-${var.environment}"
-  reports_bucket_name         = var.reports_bucket_name != "" ? var.reports_bucket_name : "${local.name_prefix}-reports-${data.aws_caller_identity.current.account_id}"
-  reports_s3_prefix           = var.reports_s3_prefix == "" ? "" : "${trimsuffix(var.reports_s3_prefix, "/")}/"
-  board_images_s3_prefix      = var.board_images_s3_prefix == "" ? "" : "${trimsuffix(var.board_images_s3_prefix, "/")}/"
-  board_images_bucket_arn     = var.board_images_bucket_name != "" ? "arn:${data.aws_partition.current.partition}:s3:::${var.board_images_bucket_name}" : aws_s3_bucket.reports.arn
-  reports_object_arn          = "${aws_s3_bucket.reports.arn}/${local.reports_s3_prefix}*"
-  board_images_object_arn     = "${local.board_images_bucket_arn}/${local.board_images_s3_prefix}*"
+  name_prefix             = "${var.project_name}-${var.environment}"
+  reports_bucket_name     = var.reports_bucket_name != "" ? var.reports_bucket_name : "${local.name_prefix}-reports-${data.aws_caller_identity.current.account_id}"
+  reports_s3_prefix       = var.reports_s3_prefix == "" ? "" : "${trimsuffix(var.reports_s3_prefix, "/")}/"
+  board_images_s3_prefix  = var.board_images_s3_prefix == "" ? "" : "${trimsuffix(var.board_images_s3_prefix, "/")}/"
+  board_images_bucket_arn = var.board_images_bucket_name != "" ? "arn:${data.aws_partition.current.partition}:s3:::${var.board_images_bucket_name}" : aws_s3_bucket.reports.arn
+  reports_object_arn      = "${aws_s3_bucket.reports.arn}/${local.reports_s3_prefix}*"
+  board_images_object_arn = "${local.board_images_bucket_arn}/${local.board_images_s3_prefix}*"
+  bedrock_model_resource_arns = [
+    "arn:${data.aws_partition.current.partition}:bedrock:*::foundation-model/*",
+    "arn:${data.aws_partition.current.partition}:bedrock:*:${data.aws_caller_identity.current.account_id}:inference-profile/*"
+  ]
   reports_origin_id           = "${local.name_prefix}-reports-origin"
   oidc_provider_hostpath      = replace(var.eks_oidc_issuer_url, "https://", "")
   backend_log_group_name      = "/${var.project_name}/${var.environment}/backend"
   ai_processor_log_group_name = "/${var.project_name}/${var.environment}/ai-processor"
+}
+
+resource "aws_kms_key" "app_services" {
+  description             = "KMS key for ${local.name_prefix} application service encryption."
+  deletion_window_in_days = 7
+  enable_key_rotation     = true
+
+  tags = merge(var.tags, {
+    Name = "${local.name_prefix}-app-services-kms"
+  })
+}
+
+resource "aws_kms_alias" "app_services" {
+  name          = "alias/${local.name_prefix}-app-services"
+  target_key_id = aws_kms_key.app_services.key_id
 }
 
 check "ai_processor_lambda_disabled" {
@@ -26,11 +45,12 @@ check "ai_processor_lambda_disabled" {
 resource "aws_ecr_repository" "app" {
   for_each             = toset(var.app_ecr_repository_names)
   name                 = each.value
-  image_tag_mutability = "MUTABLE"
+  image_tag_mutability = "IMMUTABLE"
   force_delete         = var.ecr_force_delete
 
   encryption_configuration {
-    encryption_type = "AES256"
+    encryption_type = "KMS"
+    kms_key         = aws_kms_key.app_services.arn
   }
 
   image_scanning_configuration {
@@ -158,10 +178,11 @@ resource "aws_cloudfront_origin_access_control" "reports" {
 }
 
 resource "aws_cloudfront_distribution" "reports" {
-  enabled         = true
-  is_ipv6_enabled = true
-  comment         = "${local.name_prefix} AI reports distribution"
-  price_class     = "PriceClass_200"
+  enabled             = true
+  is_ipv6_enabled     = true
+  comment             = "${local.name_prefix} AI reports distribution"
+  price_class         = "PriceClass_200"
+  default_root_object = "index.html"
 
   origin {
     domain_name              = aws_s3_bucket.reports.bucket_regional_domain_name
@@ -191,12 +212,14 @@ resource "aws_cloudfront_distribution" "reports" {
 
   restrictions {
     geo_restriction {
-      restriction_type = "none"
+      restriction_type = "whitelist"
+      locations        = ["KR"]
     }
   }
 
   viewer_certificate {
     cloudfront_default_certificate = true
+    minimum_protocol_version       = "TLSv1.2_2021"
   }
 
   tags = merge(var.tags, {
@@ -235,6 +258,7 @@ resource "aws_s3_bucket_policy" "reports" {
 resource "aws_cloudwatch_log_group" "backend" {
   name              = local.backend_log_group_name
   retention_in_days = var.cloudwatch_log_retention_days
+  kms_key_id        = aws_kms_key.app_services.arn
 
   tags = merge(var.tags, {
     Name = local.backend_log_group_name
@@ -244,6 +268,7 @@ resource "aws_cloudwatch_log_group" "backend" {
 resource "aws_cloudwatch_log_group" "ai_processor" {
   name              = local.ai_processor_log_group_name
   retention_in_days = var.cloudwatch_log_retention_days
+  kms_key_id        = aws_kms_key.app_services.arn
 
   tags = merge(var.tags, {
     Name = local.ai_processor_log_group_name
@@ -301,15 +326,13 @@ data "aws_iam_policy_document" "backend" {
   # Do not send direct identifiers to Bedrock. The application layer must
   # redact or tokenize inputs before model invocation.
   statement {
-    sid       = "BedrockInvoke"
-    effect    = "Allow"
+    sid    = "BedrockInvoke"
+    effect = "Allow"
     actions = [
       "bedrock:InvokeModel",
-      "bedrock:InvokeModelWithResponseStream",
-      "bedrock:GetInferenceProfile",
-      "bedrock:ListInferenceProfiles"
+      "bedrock:InvokeModelWithResponseStream"
     ]
-    resources = ["*"]
+    resources = local.bedrock_model_resource_arns
   }
 
   statement {
@@ -380,15 +403,13 @@ data "aws_iam_policy_document" "ai_processor" {
   }
 
   statement {
-    sid       = "BedrockInvoke"
-    effect    = "Allow"
+    sid    = "BedrockInvoke"
+    effect = "Allow"
     actions = [
       "bedrock:InvokeModel",
-      "bedrock:InvokeModelWithResponseStream",
-      "bedrock:GetInferenceProfile",
-      "bedrock:ListInferenceProfiles"
+      "bedrock:InvokeModelWithResponseStream"
     ]
-    resources = ["*"]
+    resources = local.bedrock_model_resource_arns
   }
 
   statement {

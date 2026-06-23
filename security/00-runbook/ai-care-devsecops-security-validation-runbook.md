@@ -317,36 +317,75 @@ DB Password, JWT Secret, AWS Credential, API Key, `DATABASE_URL`, `FIELD_ENCRYPT
 - Docker Compose
 - 문서, 실행 스크립트, 로그, 샘플 설정 파일
 
-### 6.3 Before 실행
+### 6.3 Before 실행 - Current Git tracked files 기준
+
+Scenario 1의 공식 Current Baseline은 작업 디렉터리 전체가 아니라 현재 Baseline Commit의 Git tracked files만 대상으로 한다.
+
+포함:
+
+- 현재 Baseline Commit에 포함된 Git tracked files
+
+제외:
+
+- `.gitignore` 또는 `.git/info/exclude`로 제외된 파일
+- `.local/` 등 개인 로컬 파일
+- untracked 보안 산출물
+- Git stash
+- 다른 브랜치 및 과거 Git history
 
 ```bash
 mkdir -p security/02-baseline/scenario-01-secrets
 
 gitleaks version
+```
 
-gitleaks git . \
-  --redact \
-  --report-format json \
-  --report-path security/02-baseline/scenario-01-secrets/gitleaks-before.json
+Git tracked files만 임시 디렉터리로 추출한다.
+
+```bash
+REPO_ROOT="$(pwd)"
+SCAN_DIR="$(mktemp -d)"
+
+git archive HEAD | tar -x -C "$SCAN_DIR"
+```
+
+임시 디렉터리에서 Gitleaks를 실행한다.
+
+```bash
+(
+  cd "$SCAN_DIR"
+  gitleaks dir . \
+    --redact \
+    --report-format json \
+    --report-path "$REPO_ROOT/security/02-baseline/scenario-01-secrets/gitleaks-current-tracked-before.json"
+)
+```
+
+요약 파일을 생성한다.
+
+```bash
+jq -r '.[] | [.RuleID, .File, (.StartLine|tostring)] | @tsv' \
+  security/02-baseline/scenario-01-secrets/gitleaks-current-tracked-before.json \
+  > security/02-baseline/scenario-01-secrets/gitleaks-current-tracked-before-summary.tsv
+```
+
+임시 디렉터리를 삭제한다.
+
+```bash
+rm -rf "$SCAN_DIR"
 ```
 
 보조 확인:
 
 ```bash
 git ls-files > security/02-baseline/scenario-01-secrets/git-ls-files-before.txt
-
-git log --all --name-status -- \
-  ".env" ".env.*" "*/.env" "*/.env.*" \
-  "*.tfvars" "*.tfstate" "*secret*.yaml" "*secret*.yml" \
-  ".github/workflows/*" "docker-compose.yml" \
-  > security/02-baseline/scenario-01-secrets/git-history-paths-before.txt
 ```
 
 주의:
 
-- `gitleaks-before.json`이 redacted 상태인지 확인한다.
+- `gitleaks-current-tracked-before.json`이 redacted 상태인지 확인한다.
 - Secret 원문이 보이는 결과는 보고서나 공유 문서에 포함하지 않는다.
 - 삭제, rotate, Git history rewrite는 승인 전 수행하지 않는다.
+- Git history 유출 여부는 별도 확장 점검으로 분리한다.
 
 ### 6.4 결과 정리 기준
 
@@ -362,9 +401,9 @@ git log --all --name-status -- \
 
 ```text
 security/02-baseline/scenario-01-secrets/
-├── gitleaks-before.json
+├── gitleaks-current-tracked-before.json
+├── gitleaks-current-tracked-before-summary.tsv
 ├── git-ls-files-before.txt
-├── git-history-paths-before.txt
 ├── baseline-summary.md
 ├── findings.csv
 ├── false-positives.md
@@ -688,10 +727,20 @@ git status
 ```bash
 mkdir -p security/04-retest/scenario-01-secrets
 
-gitleaks git . \
-  --redact \
-  --report-format json \
-  --report-path security/04-retest/scenario-01-secrets/gitleaks-after.json
+REPO_ROOT="$(pwd)"
+SCAN_DIR="$(mktemp -d)"
+
+git archive HEAD | tar -x -C "$SCAN_DIR"
+
+(
+  cd "$SCAN_DIR"
+  gitleaks dir . \
+    --redact \
+    --report-format json \
+    --report-path "$REPO_ROOT/security/04-retest/scenario-01-secrets/gitleaks-current-tracked-after.json"
+)
+
+rm -rf "$SCAN_DIR"
 ```
 
 ### 11.2 Scenario 2

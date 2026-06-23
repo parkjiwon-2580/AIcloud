@@ -2,6 +2,12 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: hospital-recommendation-service-config
+  namespace: service
+  labels:
+    app: hospital-recommendation-service
+    app.kubernetes.io/name: hospital-recommendation-service
+    app.kubernetes.io/part-of: ai-care
+    app.kubernetes.io/component: backend
 data:
   APP_ENV: "dev"
   PORT: "8080"

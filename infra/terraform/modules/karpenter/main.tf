@@ -1,5 +1,6 @@
 resource "aws_sqs_queue" "karpenter" {
-  name = "${var.cluster_name}-karpenter"
+  name                    = "${var.cluster_name}-karpenter"
+  sqs_managed_sse_enabled = true
 
   tags = var.tags
 }
@@ -121,14 +122,14 @@ resource "kubernetes_manifest" "ec2nodeclass" {
 
     spec = {
       amiFamily = "AL2023"
-      
-      amiSelectorTerms = [
-    {
-      name = "amazon-eks-node-al2023-*"
-    }
-  ]
 
-  role = "ai-care-dev-eks-node-role"
+      amiSelectorTerms = [
+        {
+          name = "amazon-eks-node-al2023-*"
+        }
+      ]
+
+      role = "ai-care-dev-eks-node-role"
 
       subnetSelectorTerms = [
         {
