@@ -13,7 +13,7 @@ replicas:
 images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/questionnaire-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/questionnaire-service
-  newTag: 172c6d31705c62b55f231c8c9f3b30d9075d3105
+  newTag: 0a5c19e4898e0e765732ea8e56d48f35a8f6bcc0
 patches:
 - path: serviceaccount-delete-patch.yaml
 - path: serviceaccountname-patch.yaml
