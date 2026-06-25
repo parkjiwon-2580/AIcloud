@@ -95,3 +95,4 @@ github_branch               = "main"
 # Set them through environment variables before terraform apply:
 #   TF_VAR_kakao_rest_api_key
 #   TF_VAR_kakao_js_api_key
+#   TF_VAR_google_maps_api_key

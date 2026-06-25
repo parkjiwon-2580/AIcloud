@@ -490,3 +490,10 @@ variable "kakao_js_api_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "google_maps_api_key" {
+  description = "Google Maps API key for hospital opening-hours enrichment. Set with TF_VAR_google_maps_api_key; do not commit real values."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

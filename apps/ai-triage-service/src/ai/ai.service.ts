@@ -363,10 +363,19 @@ async showTables() {
       return modelResult;
     }
 
+    const jsonText = this.extractJsonText(textBlock.text);
     try {
-      return JSON.parse(this.extractJsonText(textBlock.text));
+      return JSON.parse(jsonText);
     } catch {
-      return modelResult;
+      const repaired = this.repairJsonText(jsonText);
+      try {
+        return JSON.parse(repaired);
+      } catch {
+        console.warn('AI model JSON parsing failed. Falling back to symptom-based result.', {
+          preview: textBlock.text.slice(0, 300),
+        });
+        return this.fallbackResultFromText(textBlock.text);
+      }
     }
   }
 
@@ -383,6 +392,125 @@ async showTables() {
     }
 
     return text;
+  }
+
+  private repairJsonText(text: string): string {
+    return this.extractBalancedJsonObject(text)
+      .replace(/^\uFEFF/, '')
+      .replace(/[\u0000-\u001F]+/g, ' ')
+      .replace(/,\s*([}\]])/g, '$1')
+      .trim();
+  }
+
+  private extractBalancedJsonObject(text: string): string {
+    const source = text
+      .replace(/```json/gi, '')
+      .replace(/```/g, '')
+      .trim();
+    const start = source.indexOf('{');
+    if (start < 0) return source;
+
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+
+    for (let index = start; index < source.length; index += 1) {
+      const char = source[index];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (inString) continue;
+
+      if (char === '{') depth += 1;
+      if (char === '}') {
+        depth -= 1;
+        if (depth === 0) {
+          return source.slice(start, index + 1);
+        }
+      }
+    }
+
+    return source.slice(start);
+  }
+
+  private fallbackResultFromText(text: string): Record<string, unknown> {
+    const compact = String(text || '').replace(/\s+/g, ' ').trim();
+    const high =
+      /40|39|고열|호흡곤란|숨.*거칠|숨.*힘|축\s*처|처짐|소변.*줄|탈수|경련|청색/.test(compact);
+    const medium =
+      high || /38|열|기침|구토|설사|발진|통증|콧물|호흡/.test(compact);
+
+    return {
+      summary_title: high ? '주의가 필요한 소아 증상' : '소아 증상 참고 요약',
+      summary:
+        compact.slice(0, 500) ||
+        'AI 응답을 구조화하지 못했지만 입력된 증상을 기준으로 보호자 관찰과 진료 필요성을 안내합니다.',
+      risk_level: high ? 'HIGH' : medium ? 'MEDIUM' : 'LOW',
+      risk_reason: high
+        ? '고열, 호흡 변화, 처짐, 탈수 가능성 같은 위험 신호가 포함되어 빠른 진료 판단이 필요할 수 있습니다.'
+        : medium
+          ? '증상이 지속되거나 악화되면 소아청소년과 진료 상담이 필요할 수 있습니다.'
+          : '현재 입력만으로는 응급 위험 신호가 뚜렷하지 않습니다.',
+      emergency: high,
+      symptom_findings: this.fallbackFindings(compact, high),
+      possible_diseases: medium
+        ? ['호흡기 감염', '발열성 감염', '위장관 감염 또는 탈수 가능성'].filter((item) =>
+            compact ? true : item !== '위장관 감염 또는 탈수 가능성',
+          )
+        : ['경과 관찰 가능 증상'],
+      department_hint: high ? '소아청소년과 또는 응급실' : '소아청소년과',
+      hospital_recommendation: high
+        ? '고열이나 호흡 변화, 처짐이 계속되면 오늘 바로 소아청소년과 또는 응급 진료를 고려하세요.'
+        : '증상이 지속되면 가까운 소아청소년과 진료를 고려하세요.',
+      recommendation: high
+        ? '체온, 호흡, 의식 상태, 수분 섭취와 소변량을 관찰하고 악화되면 지체하지 말고 의료기관에 문의하세요.'
+        : '충분히 쉬게 하고 수분 섭취와 증상 변화를 관찰하세요. 악화되면 진료를 권장합니다.',
+      model_raw_text: compact,
+    };
+  }
+
+  private fallbackFindings(text: string, high: boolean): Array<{ term: string; meaning: string; severity: string }> {
+    const findings = [
+      /40|39|38|고열|열|발열/.test(text) && {
+        term: '발열',
+        meaning: '체온과 지속 시간을 함께 확인해야 합니다.',
+        severity: high ? 'HIGH' : 'MEDIUM',
+      },
+      /숨|호흡|기침|콧물/.test(text) && {
+        term: '호흡기 증상',
+        meaning: '숨소리 변화나 기침은 호흡기 감염 또는 호흡 부담 여부를 확인해야 합니다.',
+        severity: high ? 'HIGH' : 'MEDIUM',
+      },
+      /구토|설사/.test(text) && {
+        term: '위장관 증상',
+        meaning: '반복되면 수분 부족과 탈수 여부를 확인해야 합니다.',
+        severity: 'MEDIUM',
+      },
+      /축\s*처|처짐|보채|소변.*줄|탈수/.test(text) && {
+        term: '전신 상태 변화',
+        meaning: '처짐이나 소변량 감소는 빠른 진료 판단에 중요한 신호입니다.',
+        severity: 'HIGH',
+      },
+    ].filter(Boolean) as Array<{ term: string; meaning: string; severity: string }>;
+
+    return findings.length
+      ? findings
+      : [
+          {
+            term: '입력 증상',
+            meaning: text.slice(0, 120) || '입력된 증상 내용입니다.',
+            severity: high ? 'HIGH' : 'MEDIUM',
+          },
+        ];
   }
 
   private extractAnalysisText(

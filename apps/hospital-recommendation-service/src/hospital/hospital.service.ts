@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
-import { readEnv, readNumberEnv } from '../config';
+import { readEnv, readFirstEnv, readNumberEnv } from '../config';
 
 export interface HospitalRecommendation {
   name: string;
@@ -130,12 +130,24 @@ export class HospitalService {
   async recommend(department = '소아청소년과', region = '서울', keyword = ''): Promise<HospitalRecommendation[]> {
     const normalizedKeyword = this.normalizeKeyword(keyword);
     const normalizedDepartment = this.normalizeDepartment(`${department} ${normalizedKeyword}`) || normalizedKeyword || department;
-    const apiKey = readEnv('MAP_API_KEY');
-    const provider = readEnv('MAP_API_PROVIDER', apiKey ? 'kakao' : 'mock');
-    if (provider === 'kakao' && apiKey) {
-      return this.searchKakao(department, region, keyword, apiKey);
+    const apiKey = readFirstEnv(['MAP_API_KEY', 'KAKAO_REST_API_KEY', 'KAKAO_REST_KEY']);
+    const provider = readEnv('MAP_API_PROVIDER', 'auto').toLowerCase();
+    const shouldUseKakao = provider !== 'mock' && Boolean(apiKey);
+
+    if (provider === 'kakao' && !apiKey) {
+      this.logger.warn('MAP_API_PROVIDER=kakao but MAP_API_KEY/KAKAO_REST_API_KEY is empty. Returning mock hospital recommendations.');
     }
-    this.logger.log('MAP_API_KEY is empty or MAP_API_PROVIDER=mock. Returning mock hospital recommendations.');
+
+    if (shouldUseKakao) {
+      try {
+        const hospitals = await this.searchKakao(department, region, keyword, apiKey);
+        if (hospitals.length) return hospitals;
+        this.logger.warn(`Kakao hospital search returned no results. Falling back to mock recommendations. region=${region}, department=${department}, keyword=${keyword}`);
+      } catch (error) {
+        this.logger.warn(`Kakao hospital search failed. Falling back to mock recommendations. ${this.errorMessage(error)}`);
+      }
+    }
+    this.logger.log('Kakao search is disabled or no Kakao REST API key was provided. Returning mock hospital recommendations.');
     return this.mockRecommendations(normalizedDepartment, region);
   }
 
@@ -150,21 +162,18 @@ export class HospitalService {
     const normalizedKeyword = this.normalizeKeyword(keyword);
     const normalizedDepartment = this.normalizeDepartment(`${department} ${normalizedKeyword}`);
     const directNameSearch = this.isDirectHospitalName(normalizedKeyword);
-    const query = this.buildKakaoQuery(region, normalizedDepartment, normalizedKeyword);
-    const response = await axios.get(`${baseUrl}/v2/local/search/keyword.json`, {
-      params: { query, category_group_code: 'HP8', size: 10 },
-      headers: { Authorization: `KakaoAK ${apiKey}` },
-      timeout,
-    });
-
-    const documents = (response.data.documents ?? []) as Array<Record<string, string>>;
+    const queries = this.buildKakaoQueries(region, normalizedDepartment, normalizedKeyword);
+    const documents = await this.searchKakaoDocumentsByQueries(baseUrl, apiKey, timeout, queries, true);
+    const fallbackDocuments = documents.length
+      ? documents
+      : await this.searchKakaoDocumentsByQueries(baseUrl, apiKey, timeout, queries, false);
     const regionMatched = documents.filter((item) => this.matchesRegion(item, region));
     const hasRegionScope = this.hasRegionScope(region);
-    const scopedDocuments = hasRegionScope ? regionMatched : documents;
+    const scopedDocuments = hasRegionScope && regionMatched.length ? regionMatched : fallbackDocuments;
     const filtered = directNameSearch
       ? scopedDocuments
       : scopedDocuments.filter((item) => this.matchesDepartment(item, normalizedDepartment || normalizedKeyword));
-    const results = filtered.length ? filtered : scopedDocuments;
+    const results = this.fillResults(filtered, scopedDocuments, 5);
 
     const hospitals = results.slice(0, 5).map((item: Record<string, string>, index: number) => ({
       name: item.place_name,
@@ -179,6 +188,69 @@ export class HospitalService {
     }));
 
     return this.enrichOpeningHours(hospitals);
+  }
+
+  private fillResults(
+    primary: Array<Record<string, string>>,
+    fallback: Array<Record<string, string>>,
+    limit: number,
+  ): Array<Record<string, string>> {
+    const seen = new Set<string>();
+    const results: Array<Record<string, string>> = [];
+
+    for (const item of [...primary, ...fallback]) {
+      const key = item.id || item.place_url || `${item.place_name}|${item.road_address_name || item.address_name}`;
+      if (!key || seen.has(key)) continue;
+      seen.add(key);
+      results.push(item);
+      if (results.length >= limit) break;
+    }
+
+    return results;
+  }
+
+  private async searchKakaoDocuments(
+    baseUrl: string,
+    apiKey: string,
+    timeout: number,
+    query: string,
+    hospitalCategoryOnly: boolean,
+  ): Promise<Array<Record<string, string>>> {
+    const response = await axios.get(`${baseUrl}/v2/local/search/keyword.json`, {
+      params: {
+        query,
+        ...(hospitalCategoryOnly ? { category_group_code: 'HP8' } : {}),
+        size: 10,
+      },
+      headers: { Authorization: `KakaoAK ${apiKey}` },
+      timeout,
+    });
+
+    return (response.data.documents ?? []) as Array<Record<string, string>>;
+  }
+
+  private async searchKakaoDocumentsByQueries(
+    baseUrl: string,
+    apiKey: string,
+    timeout: number,
+    queries: string[],
+    hospitalCategoryOnly: boolean,
+  ): Promise<Array<Record<string, string>>> {
+    for (const query of queries) {
+      const documents = await this.searchKakaoDocuments(baseUrl, apiKey, timeout, query, hospitalCategoryOnly);
+      if (documents.length) return documents;
+    }
+
+    return [];
+  }
+
+  private errorMessage(error: unknown): string {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status;
+      const bodyMessage = error.response?.data?.message || error.response?.data?.error;
+      return [status ? `status=${status}` : '', bodyMessage || error.message].filter(Boolean).join(' ');
+    }
+    return error instanceof Error ? error.message : String(error);
   }
 
   private async enrichOpeningHours(hospitals: HospitalRecommendation[]): Promise<HospitalRecommendation[]> {
@@ -264,10 +336,23 @@ export class HospitalService {
     return this.normalizeDepartment(value) || value;
   }
 
-  private buildKakaoQuery(region: string, department: string, keyword: string): string {
-    if (keyword && department && !this.isDirectHospitalName(keyword)) return `${region} ${department}`;
-    if (keyword) return `${region} ${keyword}`;
-    return `${region} ${department || '병원'}`;
+  private buildKakaoQueries(region: string, department: string, keyword: string): string[] {
+    const normalizedRegion = String(region || '서울').trim() || '서울';
+    const queries = new Set<string>();
+
+    if (keyword && this.isDirectHospitalName(keyword)) {
+      queries.add(`${normalizedRegion} ${keyword}`);
+      queries.add(keyword);
+    } else {
+      const subject = department || keyword || '병원';
+      queries.add(`${normalizedRegion} ${subject}`);
+      queries.add(`${normalizedRegion} ${subject} 병원`);
+      queries.add(`${normalizedRegion} ${subject} 의원`);
+      if (keyword && keyword !== subject) queries.add(`${normalizedRegion} ${keyword}`);
+    }
+
+    queries.add(`${normalizedRegion} 병원`);
+    return [...queries].filter(Boolean);
   }
 
   private isDirectHospitalName(keyword: string): boolean {
@@ -380,6 +465,22 @@ export class HospitalService {
         openingHours: '09:00-21:00',
         isOpen: false,
         address: `${region} 안심대로 33`,
+        department,
+      },
+      {
+        name: '맑은숨 이비인후과의원',
+        distance: '3.1km',
+        openingHours: '09:00-18:30',
+        isOpen: true,
+        address: `${region} 숨편한길 18`,
+        department,
+      },
+      {
+        name: '365 아이응급의료센터',
+        distance: '3.7km',
+        openingHours: '24시간 진료',
+        isOpen: true,
+        address: `${region} 안심로 119`,
         department,
       },
     ];
