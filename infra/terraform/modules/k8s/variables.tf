@@ -23,3 +23,10 @@ variable "kakao_js_api_key" {
   sensitive   = true
   default     = ""
 }
+
+variable "google_maps_api_key" {
+  description = "Google Maps API key used by hospital-recommendation-service for optional opening-hours enrichment."
+  type        = string
+  sensitive   = true
+  default     = ""
+}

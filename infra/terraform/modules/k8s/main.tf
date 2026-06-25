@@ -5,15 +5,22 @@ resource "kubernetes_secret_v1" "hospital_recommendation_service" {
   }
 
   data = merge(
-    {
+    var.kakao_rest_api_key != "" ? {
       MAP_API_KEY = var.kakao_rest_api_key
-    },
+    } : {},
     var.kakao_js_api_key != "" ? {
       KAKAO_JS_API_KEY = var.kakao_js_api_key
+    } : {},
+    var.google_maps_api_key != "" ? {
+      GOOGLE_MAPS_API_KEY = var.google_maps_api_key
     } : {}
   )
 
   type = "Opaque"
+
+  lifecycle {
+    ignore_changes = [data]
+  }
 }
 
 resource "kubernetes_horizontal_pod_autoscaler_v2" "nginx_hpa" {

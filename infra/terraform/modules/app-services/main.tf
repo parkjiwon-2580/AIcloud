@@ -304,6 +304,8 @@ data "aws_iam_policy_document" "backend" {
     sid       = "BedrockInvoke"
     effect    = "Allow"
     actions = [
+      "bedrock:Converse",
+      "bedrock:ConverseStream",
       "bedrock:InvokeModel",
       "bedrock:InvokeModelWithResponseStream",
       "bedrock:GetInferenceProfile",
@@ -383,6 +385,8 @@ data "aws_iam_policy_document" "ai_processor" {
     sid       = "BedrockInvoke"
     effect    = "Allow"
     actions = [
+      "bedrock:Converse",
+      "bedrock:ConverseStream",
       "bedrock:InvokeModel",
       "bedrock:InvokeModelWithResponseStream",
       "bedrock:GetInferenceProfile",

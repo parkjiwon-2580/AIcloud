@@ -10,7 +10,7 @@ export class BedrockService {
     process.env.BEDROCK_MODEL_ID ??
     'global.anthropic.claude-haiku-4-5-20251001-v1:0';
 
-  private readonly maxTokens = Number(process.env.BEDROCK_MAX_TOKENS ?? 700);
+  private readonly maxTokens = Number(process.env.BEDROCK_MAX_TOKENS ?? 2000);
   private readonly fallbackToMock =
     (process.env.BEDROCK_FALLBACK_TO_MOCK ?? '').toLowerCase() === 'true';
 

@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import axios from 'axios';
-import { readEnv, readNumberEnv } from '../config';
+import { readEnv, readFirstEnv, readNumberEnv } from '../config';
 
 export interface HospitalRecommendation {
   name: string;
@@ -130,9 +130,15 @@ export class HospitalService {
   async recommend(department = '소아청소년과', region = '서울', keyword = ''): Promise<HospitalRecommendation[]> {
     const normalizedKeyword = this.normalizeKeyword(keyword);
     const normalizedDepartment = this.normalizeDepartment(`${department} ${normalizedKeyword}`) || normalizedKeyword || department;
-    const apiKey = readEnv('MAP_API_KEY');
-    const provider = readEnv('MAP_API_PROVIDER', apiKey ? 'kakao' : 'mock');
-    if (provider === 'kakao' && apiKey) {
+    const apiKey = readFirstEnv(['MAP_API_KEY', 'KAKAO_REST_API_KEY', 'KAKAO_REST_KEY']);
+    const provider = readEnv('MAP_API_PROVIDER', 'auto').toLowerCase();
+    const shouldUseKakao = provider !== 'mock' && Boolean(apiKey);
+
+    if (provider === 'kakao' && !apiKey) {
+      this.logger.warn('MAP_API_PROVIDER=kakao but MAP_API_KEY/KAKAO_REST_API_KEY is empty. Returning mock hospital recommendations.');
+    }
+
+    if (shouldUseKakao) {
       try {
         const hospitals = await this.searchKakao(department, region, keyword, apiKey);
         if (hospitals.length) return hospitals;
@@ -141,7 +147,7 @@ export class HospitalService {
         this.logger.warn(`Kakao hospital search failed. Falling back to mock recommendations. ${this.errorMessage(error)}`);
       }
     }
-    this.logger.log('MAP_API_KEY is empty or MAP_API_PROVIDER=mock. Returning mock hospital recommendations.');
+    this.logger.log('Kakao search is disabled or no Kakao REST API key was provided. Returning mock hospital recommendations.');
     return this.mockRecommendations(normalizedDepartment, region);
   }
 
@@ -156,11 +162,11 @@ export class HospitalService {
     const normalizedKeyword = this.normalizeKeyword(keyword);
     const normalizedDepartment = this.normalizeDepartment(`${department} ${normalizedKeyword}`);
     const directNameSearch = this.isDirectHospitalName(normalizedKeyword);
-    const query = this.buildKakaoQuery(region, normalizedDepartment, normalizedKeyword);
-    const documents = await this.searchKakaoDocuments(baseUrl, apiKey, timeout, query, true);
+    const queries = this.buildKakaoQueries(region, normalizedDepartment, normalizedKeyword);
+    const documents = await this.searchKakaoDocumentsByQueries(baseUrl, apiKey, timeout, queries, true);
     const fallbackDocuments = documents.length
       ? documents
-      : await this.searchKakaoDocuments(baseUrl, apiKey, timeout, query, false);
+      : await this.searchKakaoDocumentsByQueries(baseUrl, apiKey, timeout, queries, false);
     const regionMatched = documents.filter((item) => this.matchesRegion(item, region));
     const hasRegionScope = this.hasRegionScope(region);
     const scopedDocuments = hasRegionScope && regionMatched.length ? regionMatched : fallbackDocuments;
@@ -221,6 +227,21 @@ export class HospitalService {
     });
 
     return (response.data.documents ?? []) as Array<Record<string, string>>;
+  }
+
+  private async searchKakaoDocumentsByQueries(
+    baseUrl: string,
+    apiKey: string,
+    timeout: number,
+    queries: string[],
+    hospitalCategoryOnly: boolean,
+  ): Promise<Array<Record<string, string>>> {
+    for (const query of queries) {
+      const documents = await this.searchKakaoDocuments(baseUrl, apiKey, timeout, query, hospitalCategoryOnly);
+      if (documents.length) return documents;
+    }
+
+    return [];
   }
 
   private errorMessage(error: unknown): string {
@@ -315,10 +336,23 @@ export class HospitalService {
     return this.normalizeDepartment(value) || value;
   }
 
-  private buildKakaoQuery(region: string, department: string, keyword: string): string {
-    if (keyword && department && !this.isDirectHospitalName(keyword)) return `${region} ${department}`;
-    if (keyword) return `${region} ${keyword}`;
-    return `${region} ${department || '병원'}`;
+  private buildKakaoQueries(region: string, department: string, keyword: string): string[] {
+    const normalizedRegion = String(region || '서울').trim() || '서울';
+    const queries = new Set<string>();
+
+    if (keyword && this.isDirectHospitalName(keyword)) {
+      queries.add(`${normalizedRegion} ${keyword}`);
+      queries.add(keyword);
+    } else {
+      const subject = department || keyword || '병원';
+      queries.add(`${normalizedRegion} ${subject}`);
+      queries.add(`${normalizedRegion} ${subject} 병원`);
+      queries.add(`${normalizedRegion} ${subject} 의원`);
+      if (keyword && keyword !== subject) queries.add(`${normalizedRegion} ${keyword}`);
+    }
+
+    queries.add(`${normalizedRegion} 병원`);
+    return [...queries].filter(Boolean);
   }
 
   private isDirectHospitalName(keyword: string): boolean {

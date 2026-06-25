@@ -24,3 +24,4 @@ spec:
             name: hospital-recommendation-service-config
         - secretRef:
             name: hospital-recommendation-service-secret
+            optional: true
