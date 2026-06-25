@@ -25,6 +25,8 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
 # Node.js / TypeScript / React Native Lint 검사 (Placeholder)
     - name: Setup Node.js
@@ -53,8 +55,9 @@ jobs:
         GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
       run: |
         if [ -z "$MAP_API_KEY" ]; then
-          echo "GitHub secret KAKAO_REST_API_KEY is required for hospital recommendations."
-          exit 1
+          echo "GitHub secret KAKAO_REST_API_KEY is not set. Skipping Kubernetes Secret update."
+          echo "Hospital search will use the existing Kubernetes Secret if one already exists, otherwise it will fall back to mock results."
+          exit 0
         fi
 
         aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
@@ -93,15 +96,16 @@ jobs:
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git pull --rebase origin ${{ github.ref_name }}
         
         # 🚨 hospital-recommendation-service 전용 경로 적용 완료!
         git add manifests/overlays/dev/hospital-recommendation-service/kustomization.yaml
         
         # 만약 커밋할 내용이 없으면 에러 내지 말고 넘어가도록 안전장치 추가
         git commit -m "chore: update hospital-recommendation-service image tag to ${{ github.sha }}" || echo "No changes"
-        
-        # 🌟 [마스터 치트키] 다른 봇이 먼저 Push했다면 내 코드를 그 뒤에 줄 세우기 (Rebase)
-        git pull --rebase origin ${{ github.ref_name }}
-        
+
         # 현재 실행 중인 브랜치로 안전하게 Push!
-        git push origin ${{ github.ref_name }}
+        git push origin HEAD:${{ github.ref_name }} || (
+          git pull --rebase origin ${{ github.ref_name }} &&
+          git push origin HEAD:${{ github.ref_name }}
+        )
