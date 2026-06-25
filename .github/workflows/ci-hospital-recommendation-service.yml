@@ -96,16 +96,20 @@ jobs:
       run: |
         git config --global user.name "github-actions[bot]"
         git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git pull --rebase origin ${{ github.ref_name }}
         
         # 🚨 hospital-recommendation-service 전용 경로 적용 완료!
         git add manifests/overlays/dev/hospital-recommendation-service/kustomization.yaml
         
-        # 만약 커밋할 내용이 없으면 에러 내지 말고 넘어가도록 안전장치 추가
-        git commit -m "chore: update hospital-recommendation-service image tag to ${{ github.sha }}" || echo "No changes"
+        if git diff --cached --quiet; then
+          echo "No manifest changes to commit."
+          exit 0
+        fi
+
+        git commit -m "chore: update hospital-recommendation-service image tag to ${{ github.sha }}"
+        git pull --rebase --autostash origin ${{ github.ref_name }}
 
         # 현재 실행 중인 브랜치로 안전하게 Push!
         git push origin HEAD:${{ github.ref_name }} || (
-          git pull --rebase origin ${{ github.ref_name }} &&
+          git pull --rebase --autostash origin ${{ github.ref_name }} &&
           git push origin HEAD:${{ github.ref_name }}
         )
