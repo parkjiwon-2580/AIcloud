@@ -7,6 +7,7 @@ resources:
 
 # 개발 환경만의 특별한 설정
 namePrefix: dev-
+namespace: service
 replicas:
 - count: 2
   name: hospital-recommendation-service

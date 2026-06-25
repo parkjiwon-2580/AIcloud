@@ -13,7 +13,6 @@ data:
   BEDROCK_MAX_TOKENS: "4000"
   BEDROCK_MOCK: "false"
   BEDROCK_FALLBACK_TO_MOCK: "false"
-  BEDROCK_MAX_TOKENS: "2000"
   # S3 설정
   S3_BUCKET_NAME: "ai-care-dev-reports-105959916837"
   S3_REPORT_PREFIX: "reports/"

@@ -7,6 +7,7 @@ resources:
 
 # 개발 환경만의 특별한 설정
 namePrefix: dev-
+namespace: service
 replicas:
 - count: 2
   name: ai-triage-service
@@ -14,6 +15,3 @@ images:
 - name: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service:latest
   newName: 105959916837.dkr.ecr.ap-northeast-2.amazonaws.com/ai-triage-service
   newTag: c27d6d5b1f95809ac9bb82f0e0ced59b8ec982b7
-patches:
-- path: serviceaccount-delete-patch.yaml
-- path: serviceaccountname-patch.yaml
